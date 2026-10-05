@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific local data
+data/*.db
+data/*.db-*
+data/raw/
+
+# Generated experiment results
+outputs/
+
+# Ignoring PyCharm
+.idea/
