@@ -6,8 +6,6 @@ import requests
 LOCATIONS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/locations"
 PAGE_SIZE = 1000
 
-PAGE_SIZE = 1000
-
 
 def fetch_locations():
     """Download all OCPI location pages using explicit pagination."""
