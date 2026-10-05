@@ -4,6 +4,7 @@ import requests
 
 
 LOCATIONS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/locations"
+TARIFFS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/tariffs"
 PAGE_SIZE = 1000
 
 
@@ -61,6 +62,29 @@ def fetch_locations():
             offset += PAGE_SIZE
 
     return locations
+
+
+def fetch_tariffs():
+    """Download the public OCPI tariff list."""
+    print("Downloading OCPI tariffs...")
+
+    response = requests.get(TARIFFS_URL, timeout=(10, 60))
+    response.raise_for_status()
+    payload = response.json()
+
+    if payload.get("status_code") != 1000:
+        message = payload.get(
+            "status_message",
+            "Unknown OCPI error",
+        )
+        raise ValueError(f"OCPI tariff request failed: {message}")
+
+    tariffs = payload.get("data")
+    if not isinstance(tariffs, list):
+        raise ValueError("Expected OCPI tariff 'data' to contain a list.")
+
+    print(f"Received {len(tariffs)} tariffs.")
+    return tariffs
 
 
 def print_summary(locations):
