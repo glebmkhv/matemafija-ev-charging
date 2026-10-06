@@ -18,6 +18,29 @@ python src/collect.py --once
 ```
 
 The source-native database design and reconciliation rules are documented in
-[`docs/database_v2.md`](docs/database_v2.md). The current dashboard still uses
-the legacy compatibility tables; the collector dual-writes OCPI data there until
-the dashboard is migrated in the next step.
+[`docs/database_v2.md`](docs/database_v2.md).
+
+## Database exploration dashboard
+
+Start collection and the dashboard together:
+
+```bash
+python src/collect.py --dashboard
+```
+
+Or open the dashboard without starting a collector:
+
+```bash
+python -m streamlit run src/dashboard.py
+```
+
+The dashboard reads the source-native v2 tables in read-only mode and refreshes
+every 30 seconds. It exposes the current OCPI and DATEX records, historical
+observations, source revisions and raw payload metadata, explicit cross-source
+mappings, data-quality issues, and the live SQLite schema.
+
+It deliberately does not calculate queue length, post-charge idle time,
+congestion scores, adaptive fees, cashback, or other model-derived values. The
+purpose of this interface is to inspect what was actually observed, how it was
+normalized, and which relationships have evidence before derived variables are
+designed.

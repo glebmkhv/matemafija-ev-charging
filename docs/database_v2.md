@@ -85,3 +85,29 @@ authorization-named fields are replaced recursively with `[REDACTED]` before
 the raw metadata payload is persisted. Authentication secrets must remain in
 environment variables or a system keychain.
 
+## Exploration dashboard
+
+`src/dashboard.py` is a read-only developer interface over the v2 database. It
+auto-refreshes every 30 seconds and provides eight complementary views:
+
+1. **Overview** — current entity counts and the latest result from every source
+   endpoint.
+2. **OCPI** — locations, organizations, EVSEs, connectors, tariffs, auxiliary
+   metadata, status observations, normalized revisions, and raw payloads.
+3. **DATEX static** — stations, refill points, connectors, rates, price text,
+   validity periods, revisions, and raw publications.
+4. **DATEX dynamic** — publications, original and canonical status values,
+   timestamp quality, station observations, and mapping evidence.
+5. **Relationships** — canonical sites/equipment and every explicit OCPI-DATEX
+   mapping with its method, confidence, evidence, review state, and validity.
+6. **Quality** — recorded data-quality issues, entities missing from complete
+   snapshots, and timestamp parsing quality.
+7. **Revisions & raw** — the run-by-run observation trail, deduplicated
+   revisions, and raw payload metadata needed for reproducibility.
+8. **Schema** — live columns, foreign keys, indexes, sample rows, creation SQL,
+   and a relationship-topology diagram.
+
+The interface intentionally reports direct source facts and database provenance.
+It does not estimate queues, idle time, congestion, pricing, or other future
+model variables. Counts and status distributions from different protocols are
+shown separately unless an explicit mapping exists.
