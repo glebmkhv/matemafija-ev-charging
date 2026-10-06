@@ -5,6 +5,7 @@ import requests
 
 LOCATIONS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/locations"
 TARIFFS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/tariffs"
+CREDENTIALS_URL = "https://ev.vialietuva.lt/ocpi/2.3.0/credentials"
 PAGE_SIZE = 1000
 
 
@@ -85,6 +86,21 @@ def fetch_tariffs():
 
     print(f"Received {len(tariffs)} tariffs.")
     return tariffs
+
+
+def fetch_credentials_metadata():
+    """Download public OCPI credentials metadata; callers must discard tokens."""
+    print("Downloading OCPI credentials metadata...")
+    response = requests.get(CREDENTIALS_URL, timeout=(10, 60))
+    response.raise_for_status()
+    payload = response.json()
+    if payload.get("status_code") != 1000:
+        message = payload.get("status_message", "Unknown OCPI error")
+        raise ValueError(f"OCPI credentials request failed: {message}")
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise ValueError("Expected OCPI credentials 'data' to contain an object.")
+    return data
 
 
 def print_summary(locations):
