@@ -74,17 +74,18 @@ certain zero transition probability.
 
 ## Role in assumption-driven simulation
 
-The fitted baseline supplies `h_release,0` and `h_start,0`. A future response
-model may perturb them, for example:
+The fitted baseline supplies `h_release,0` and `h_start,0`. The implemented
+release response perturbs the first of them as follows:
 
 ```text
-h_release(lambda, t) = h_release,0(t)
-                       * exp(theta_release * lambda * delta_price(t - tau))
+h_release,1(t) = h_release,0(t)
+                 * exp(theta_release * effective_driver(t - tau))
 ```
 
-Here `theta_release` and `tau` remain assumed scenario parameters. They are not
-estimated by this baseline model. The unmodified model therefore corresponds
-to `lambda=0` or `theta=0` and must reproduce the baseline transition process.
+Here `theta_release` and `tau` remain assumed scenario parameters. The final
+driver is produced outside the response layer and will later contain applicable
+rollout and intensity terms. A zero driver or `theta_release=0` exactly
+reproduces the baseline transition process.
 
 ## Current-data status
 

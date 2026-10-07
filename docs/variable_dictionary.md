@@ -209,6 +209,12 @@ quantities are `simulated`. A withheld driver has no numeric value and is never
 reinterpreted as zero. The formal contract is documented in
 `docs/response_contract.md`.
 
+The release-only implementation uses
+`h_release,1 = h_release,0 * exp(theta_release * delayed_driver)`. The baseline
+hazard is estimated, sensitivity and delay are assumed, the external driver is
+policy-defined, and adjusted hazard/probability are simulated. It does not
+generate an arrival response or a state transition by itself.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.

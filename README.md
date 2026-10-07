@@ -48,6 +48,10 @@ The policy-independent boundary between baseline transitions, external policy
 signals and explicitly assumed response parameters is defined in
 [`docs/response_contract.md`](docs/response_contract.md).
 
+The first assumption-driven mechanism, limited to the observable
+`charging -> available` release proxy, is specified in
+[`docs/release_response.md`](docs/release_response.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

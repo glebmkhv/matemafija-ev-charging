@@ -312,9 +312,10 @@ numeric value and cannot be applied as zero. The exact definitions, provenance
 chain and safety invariants are specified in
 [`response_contract.md`](response_contract.md).
 
-No release functional form or pricing driver is approved by this step. Those
-belong to the following release-channel implementation and later policy
-integration steps respectively.
+The sole implemented mechanism is the exponential-hazard release response in
+[`release_response.md`](release_response.md). Its driver interface is fixed,
+but the pricing rule that will produce the driver remains unapproved and belongs
+to the later policy-integration step.
 
 `BehaviouralResponseSpecification` remains reserved for validated
 counterfactual execution. It requires evidence metadata, a validation report,
@@ -542,6 +543,6 @@ Every request/result pair must preserve:
    baselines or only current qualified snapshots.
 5. Define withheld behaviour and recovery after data gaps.
 6. Approve the exact replay evaluation metrics.
-7. Define the first release-response functional form and assumption grid.
+7. Approve the release-response assumption grid for experiments.
 8. Decide what evidence could promote an assumed parameter to an estimate and
    eventually unlock validated counterfactual mode.
