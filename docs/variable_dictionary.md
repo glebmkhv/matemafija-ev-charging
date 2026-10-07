@@ -136,7 +136,10 @@ Every output must record `bin_start`, `bin_end`, timezone and bin width.
 | `available_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with `available_capacity=1`. | Direct observable scarcity input. |
 | `charging_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with canonical status `charging`. | Utilization proxy. |
 | `non_operational_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with `outoforder` or `inoperative`. | Separates demand scarcity from equipment failure. |
-| `unknown_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with missing/unmapped state. | Coverage and denominator control. |
+| `unknown_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with canonical status `unknown`. | Coverage and denominator control. |
+| `blocked_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with canonical status `blocked`; the physical and operational cause remains unknown. | Coverage and diagnostics; not counted as occupied. |
+| `unrecognized_status_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with a status not covered by the current classification. | Detects protocol/schema drift. |
+| `indeterminate_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with `unknown`, `blocked` or an unmapped status whose operational capacity cannot be determined. | Implemented coverage control; it must not be counted as occupied. |
 | `effective_operational_capacity` | reconstructed | EVSE count | site/snapshot or bin | Count whose operational group is true. | Preferred occupancy denominator. |
 | `occupancy_proxy` | reconstructed | ratio | site/snapshot or bin | `charging_evse_count / effective_operational_capacity`, when denominator is positive. | Common evaluation variable, not literal parking occupancy. |
 | `availability_ratio` | reconstructed | ratio | site/snapshot or bin | `available_evse_count / effective_operational_capacity`. | Core observable scarcity variable. |
@@ -145,6 +148,11 @@ Every output must record `bin_start`, `bin_end`, timezone and bin width.
 | `release_proxy_count` | reconstructed | events/bin | site/bin | Count of `charging → available` transitions. | Capacity-release proxy. |
 | `net_available_change` | reconstructed | EVSE/bin | site/bin | Last minus first available count within a bin. | Descriptive dynamics. |
 | `valid_observation_coverage` | reconstructed | ratio | site/bin | Valid observed EVSE-time divided by expected EVSE-time. | Mandatory quality weight/filter. |
+
+The initial implementation in `src/flow.py` produces source-native OCPI
+location snapshots and UTC transition bins. It does not combine DATEX and OCPI.
+Its default coverage threshold is `0.8`; this remains a documented engineering
+default rather than an empirically approved policy threshold.
 
 ## 7. Historical series and derivative statistics
 
