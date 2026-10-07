@@ -180,6 +180,12 @@ No derivative statistic should be materialized until its minimum history and
 coverage thresholds are defined. The current short collection period is enough
 to validate reconstruction code but not to claim stable weekly behaviour.
 
+The initial implementation in `src/derivative_statistics.py` requires 7 days
+of history, 7 local calendar days and 80% eligible expected-snapshot coverage
+before publishing day-block-bootstrap confidence intervals. Episode-duration
+uncertainty additionally requires 20 complete episodes. Definitions and
+presentation rules are documented in `docs/derivative_statistics.md`.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.

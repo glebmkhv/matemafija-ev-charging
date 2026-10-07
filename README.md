@@ -27,6 +27,10 @@ estimated and policy variables are defined in
 Observable evidence of charging-capacity scarcity, its censoring rules and its
 limits are defined in [`docs/scarcity_metrics.md`](docs/scarcity_metrics.md).
 
+Qualification thresholds and uncertainty estimation for the first derivative
+statistics are documented in
+[`docs/derivative_statistics.md`](docs/derivative_statistics.md).
+
 ## Database exploration dashboard
 
 Start collection and the dashboard together:
