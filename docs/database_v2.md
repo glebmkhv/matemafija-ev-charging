@@ -6,6 +6,9 @@ The database keeps three distinct kinds of information:
 2. explicit, revisable mappings between source entities;
 3. derived or simulated information, which must never be presented as source data.
 
+Canonical variable names, provenance classes and modelling boundaries are
+defined in [`variable_dictionary.md`](variable_dictionary.md).
+
 ## Collection cadence
 
 | Endpoint | Default cadence | Stored as |

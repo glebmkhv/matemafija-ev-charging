@@ -1,0 +1,248 @@
+# Variable dictionary and provenance contract
+
+This document defines the variables that may be used between the source-native
+SQLite layer, historical analysis, scarcity measurement and future fixed versus
+adaptive policy comparison. It is a provenance contract: every value must state
+whether it was observed, reconstructed, estimated or chosen as policy.
+
+Document status: **draft v0.1**. Observed and reconstructed definitions may be
+used to design the historical layer. Estimated scarcity definitions and all
+policy variables remain proposals until reviewed by the project team and the
+author of the mathematical model.
+
+The current MVP does not admit arbitrary simulated queues, arrivals or
+post-charge idle times. Variables that cannot be supported by the public feeds
+are listed explicitly as unavailable.
+
+## 1. Provenance classes
+
+| Class | Meaning | Permitted transformation |
+|---|---|---|
+| `observed` | A value supplied by OCPI/DATEX or recorded by the collector. | Parsing, canonicalization, unit conversion and timezone normalization, while retaining the raw value. |
+| `reconstructed` | A deterministic interval, transition or aggregate produced from ordered observations. | Rules must be reproducible and must retain observation bounds and gaps. |
+| `estimated` | A statistical quantity calculated from observed or reconstructed values. | Estimator, sample size, uncertainty, filters and training window are mandatory. |
+| `policy_defined` | A parameter or rule selected by the project rather than discovered in the feed. | Must be versioned and kept separate from evidence about the existing system. |
+| `unavailable` | A concept not identifiable from the current public feeds. | Must not enter the MVP as if observed. It requires a validated estimator, another data source or reformulation. |
+
+`simulated` is deliberately excluded from the current data contract. A later
+simulator may generate event realizations only after its contract and validation
+criteria have been agreed.
+
+## 2. Common dimensions and identifiers
+
+| Canonical name | Class | Unit/type | Level | SQL provenance | Definition and quality rule | Intended use |
+|---|---|---|---|---|---|---|
+| `observation_time_utc` | observed | UTC timestamp | observation | `ocpi_evse_status_observations.observed_at`; `datex_site_status_observations.observed_at` | Time at which the collector observed the value. This is the primary ordering time for snapshots. | All time series. |
+| `source_update_time_utc` | observed, normalized | UTC timestamp | source entity | `source_last_updated_utc` columns | Source-reported update time. Raw form must remain available. OCPI values without an offset use `Europe/Vilnius` and carry a quality suffix. | Freshness and transition-time bounds; never substitute blindly for observation time. |
+| `source_timestamp_age_seconds` | reconstructed | seconds | observation | stored field of the same name | `observation_time_utc - source_update_time_utc`. Negative values remain quality anomalies. | Freshness filtering. |
+| `source_timestamp_quality` | reconstructed | category | observation | stored field of the same name | Current categories include `current`, `older_than_24_hours`, `older_than_30_days`, `future`, `missing_or_invalid`, optionally suffixed by `_timezone_assumed_europe_vilnius`. | Inclusion/exclusion and sensitivity analysis. |
+| `ocpi_location_id` | observed | text key | OCPI location | `ocpi_locations.ocpi_location_key` | Source-scoped identity; it is not automatically a physical site identity. | OCPI-native aggregation. |
+| `ocpi_evse_id` | observed | text key | EVSE | `ocpi_evses.ocpi_evse_key` | Stable source-scoped EVSE identity. | Primary unit for OCPI state intervals. |
+| `ocpi_connector_id` | observed | text key | connector | `ocpi_connectors.ocpi_connector_key` | Source-scoped connector identity. A connector is not assumed to be independently usable when several connectors belong to one EVSE. | Equipment metadata. |
+| `charging_site_id` | reconstructed | text key | physical site | `charging_sites.charging_site_id` through `charging_site_source_links` | Canonical site candidate. Every analysis must retain link confidence and review state. | Preferred spatial aggregation when mapping quality is acceptable. |
+| `charging_equipment_id` | reconstructed | text key | equipment group | `charging_equipment.charging_equipment_id` through `charging_equipment_source_links` | Canonical equipment group; current links may be many-to-one. | Cross-source equipment analysis only after cardinality checks. |
+| `site_mapping_confidence` | observed mapping metadata | ratio `[0,1]` | source-to-site link | `charging_site_source_links.confidence_score` | Confidence assigned by the mapping algorithm, not a probability proven by validation. | Filter and sensitivity dimension. |
+| `equipment_mapping_confidence` | observed mapping metadata | ratio `[0,1]` | source-to-equipment link | `charging_equipment_source_links.confidence_score` | Must be used together with `mapping_cardinality`, `mapping_method`, `review_status` and `manually_verified`. | Filter and sensitivity dimension. |
+
+## 3. Structural metadata
+
+These variables describe what infrastructure exists. They form the structural
+input to the future generalized model.
+
+| Canonical name | Class | Unit/type | Level | SQL provenance | Definition and caveat | Fixed/adaptive role |
+|---|---|---|---|---|---|---|
+| `site_latitude`, `site_longitude` | observed or canonicalized | decimal degrees | location/site | `ocpi_locations.latitude/longitude`; `datex_energy_infrastructure_stations.latitude/longitude`; `charging_sites.representative_*` | Canonical coordinates inherit mapping uncertainty. | Same in both policies; spatial grouping. |
+| `city` | observed | text | OCPI location | `ocpi_locations.city` | Normalize only for comparison; retain raw value. | Scope selection, initially Vilnius. |
+| `location_time_zone` | observed | IANA/text | OCPI location | `ocpi_locations.time_zone` | If missing, source-level `Europe/Vilnius` assumption must be explicit. | Local hour/day features. |
+| `evse_count` | reconstructed | count | location/site | count of current `ocpi_evses`, grouped by location or accepted site mapping | Count EVSEs, not connectors. | Capacity denominator candidate. |
+| `connector_count` | reconstructed | count | EVSE/location/site | count of current `ocpi_connectors` | Must not be used as simultaneous charging capacity without capability evidence. | Descriptive metadata only by default. |
+| `datex_refill_point_count` | observed/reconstructed | count | DATEX station | `number_of_refill_points`; count of `datex_refill_points` | Report stated and parsed counts separately when they disagree. | Cross-check of capacity, not automatic replacement for EVSE count. |
+| `max_electric_power_kw` | observed, converted | kW | connector | `ocpi_connectors.max_electric_power_w / 1000`; DATEX `max_power_at_socket_kw` | Keep source and unit interpretation. Multiple connectors must not be summed without concurrency rules. | Station segmentation and later charging-duration analysis. |
+| `connector_standard` | observed/canonicalized | category | connector | `ocpi_connectors.connector_standard`; DATEX connector type fields | Cross-source normalization requires an explicit mapping table. | Equipment compatibility. |
+| `opening_state` | observed/reconstructed | category | location | OCPI opening-time tables and `charging_when_closed` | Unknown opening times remain unknown. | Define periods in which capacity is expected to be offered. |
+| `tariff_component_type` | observed | category | tariff component | `ocpi_tariff_price_components.component_type` | May include energy, time, parking or flat components. | Evidence about current fixed rules. |
+| `tariff_component_price` | observed | currency-specific decimal | tariff component | `ocpi_tariff_price_components.price_decimal` | Join currency and restrictions; do not parse display text when structured data exists. | Fixed-policy baseline input. |
+
+## 4. Status observations: level A
+
+### 4.1 Raw and canonical status
+
+| Canonical name | Class | Unit/type | Level | SQL provenance | Definition and quality rule | Intended use |
+|---|---|---|---|---|---|---|
+| `evse_status_raw` | observed | text | EVSE snapshot | `ocpi_evse_status_observations.status_raw` | Unmodified OCPI status. | Audit and reproducibility. |
+| `evse_status` | observed, canonicalized | category | EVSE snapshot | `status_canonical` | Lower-case canonical form of the source value. | State series and intervals. |
+| `datex_station_available` | observed, parsed | boolean/unknown | DATEX station snapshot | `datex_station_status_observations.is_available_boolean` | Use only when the station status has a valid static match. | Station-level corroboration. |
+| `datex_refill_status` | observed, canonicalized | category | DATEX dynamic record | `datex_refill_point_status_observations.status_canonical` | Equipment-level use requires a row in `datex_dynamic_status_static_mappings`; count mismatches remain excluded. | Sensitivity/corroboration, not the primary EVSE series yet. |
+
+### 4.2 Operational status groups
+
+The first interval implementation must map canonical statuses into groups while
+retaining the original status:
+
+| Status | `available_capacity` | `occupied_or_unavailable` | `operational` | Interpretation |
+|---|---:|---:|---:|---|
+| `available` | 1 | 0 | 1 | EVSE is offered as available by the source. |
+| `charging` | 0 | 1 | 1 | EVSE is reported charging; this is not proof of energy flow at every instant. |
+| `reserved` | 0 | 1 | 1 | Operational but not available to an arriving unreserved user. |
+| `blocked` | 0 | 1 | unknown | Not available; physical cause may be unknown. |
+| `outoforder` | 0 | 1 | 0 | Temporarily unavailable due to fault/status. |
+| `inoperative` | 0 | 1 | 0 | Not operational. |
+| `removed` | 0 | 0 | 0 | Exclude from offered capacity after the effective observation. |
+| `unknown` or any unmapped value | unknown | unknown | unknown | Exclude from ratio denominators unless a sensitivity rule is explicitly selected. |
+
+`occupied_or_unavailable` must not be called `occupied`: faulted, blocked and
+reserved EVSEs are not proof of a connected vehicle.
+
+## 5. Reconstructed state intervals: level B
+
+For one EVSE, order valid observations by `observed_at`. Consecutive equal
+statuses form one interval. A status change is only known to have occurred
+between the last observation of the old state and the first observation of the
+new state.
+
+| Canonical name | Class | Unit/type | Level | Definition | Uncertainty/quality | Intended use |
+|---|---|---|---|---|---|---|
+| `interval_start_lower_utc` | reconstructed | UTC timestamp | EVSE interval | Observation time of the first row in the run of equal statuses. | Lower observation bound, not exact physical start. | Interval indexing. |
+| `interval_start_upper_utc` | reconstructed | UTC timestamp | EVSE interval | For a changed state, its first observation time; previous observation provides the lower bound for the transition. | Exact start is interval-censored. | Transition uncertainty. |
+| `interval_end_lower_utc` | reconstructed | UTC timestamp | EVSE interval | Last observation time at which the interval status was seen. | Lower bound for its end. | Conservative duration. |
+| `interval_end_upper_utc` | reconstructed | UTC timestamp | EVSE interval | First subsequent observation with another status. | Null for a right-censored final interval. | Upper duration bound. |
+| `duration_lower_minutes` | reconstructed | minutes | EVSE interval | `interval_end_lower - interval_start_upper`, floored at zero. | Conservative observed duration. | Robust metrics. |
+| `duration_upper_minutes` | reconstructed | minutes | EVSE interval | `interval_end_upper - interval_start_lower` when both exist. | Includes polling uncertainty. | Sensitivity bound. |
+| `duration_midpoint_minutes` | estimated | minutes | EVSE interval | Midpoint between lower and upper duration bounds. | Report together with both bounds; not a direct observation. | Exploratory estimates only. |
+| `left_censored` | reconstructed | boolean | EVSE interval | Interval begins at the first available observation, so its real start may be earlier. | Must be excluded from complete-duration distributions by default. | Filtering. |
+| `right_censored` | reconstructed | boolean | EVSE interval | No later different status is observed. | Must be excluded from complete-duration distributions by default. | Filtering. |
+| `contains_collection_gap` | reconstructed | boolean | EVSE interval | At least one adjacent observation gap exceeds the selected cadence tolerance. | Threshold must be recorded, initially `2 × expected cadence`. | Exclusion/sensitivity. |
+| `transition_from`, `transition_to` | reconstructed | category pair | EVSE transition | Adjacent distinct canonical statuses. | Retain both bounding observation times. | Flow counts. |
+| `available_to_charging_transition` | reconstructed | event | EVSE | `available → charging`. | Proxy for a charging start, not a proven vehicle arrival. | Start-flow proxy. |
+| `charging_to_available_transition` | reconstructed | event | EVSE | `charging → available`. | Proxy for EVSE release, not exact charge completion. | Release-flow proxy. |
+
+The following interpretations are prohibited:
+
+- a `charging` interval is not automatically an energy-transfer interval;
+- `charging → available` is not exact charging-finished time;
+- a polling interval is not an exact event timestamp;
+- absence of `available` does not prove a physical queue.
+
+## 6. Flow time series
+
+Flow series are deterministic aggregations over fixed UTC or local-time bins.
+Every output must record `bin_start`, `bin_end`, timezone and bin width.
+
+| Canonical name | Class | Unit | Level/bin | Definition | Fixed/adaptive role |
+|---|---|---|---|---|---|
+| `offered_evse_count` | reconstructed | EVSE count | site/bin | EVSEs present in the relevant successful complete snapshot and expected to participate in capacity; do not reconstruct historical capacity from today's `is_current` flag. Unknown status is reported separately. | Common structural capacity. |
+| `available_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with `available_capacity=1`. | Direct observable scarcity input. |
+| `charging_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with canonical status `charging`. | Utilization proxy. |
+| `non_operational_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with `outoforder` or `inoperative`. | Separates demand scarcity from equipment failure. |
+| `unknown_evse_count` | reconstructed | EVSE count | site/snapshot or bin | Count with missing/unmapped state. | Coverage and denominator control. |
+| `effective_operational_capacity` | reconstructed | EVSE count | site/snapshot or bin | Count whose operational group is true. | Preferred occupancy denominator. |
+| `occupancy_proxy` | reconstructed | ratio | site/snapshot or bin | `charging_evse_count / effective_operational_capacity`, when denominator is positive. | Common evaluation variable, not literal parking occupancy. |
+| `availability_ratio` | reconstructed | ratio | site/snapshot or bin | `available_evse_count / effective_operational_capacity`. | Core observable scarcity variable. |
+| `zero_availability` | reconstructed | boolean | site/snapshot or bin | `available_evse_count = 0` and effective capacity is positive, with acceptable coverage. | Core scarcity event. |
+| `charging_start_proxy_count` | reconstructed | events/bin | site/bin | Count of `available → charging` transitions assigned using a documented interval-censoring convention. | Demand-flow proxy. |
+| `release_proxy_count` | reconstructed | events/bin | site/bin | Count of `charging → available` transitions. | Capacity-release proxy. |
+| `net_available_change` | reconstructed | EVSE/bin | site/bin | Last minus first available count within a bin. | Descriptive dynamics. |
+| `valid_observation_coverage` | reconstructed | ratio | site/bin | Valid observed EVSE-time divided by expected EVSE-time. | Mandatory quality weight/filter. |
+
+## 7. Historical series and derivative statistics
+
+These variables require a declared training window and grouping dimensions such
+as site, local weekday and local hour.
+
+| Canonical name | Class | Unit | Definition | Minimum reporting requirements | Intended use |
+|---|---|---|---|---|---|
+| `mean_availability_ratio` | estimated | ratio | Mean of valid `availability_ratio` values. | Window, bins, coverage, sample count, standard error or bootstrap interval. | Normal operating profile. |
+| `p_zero_availability` | estimated | probability | Valid time share with `zero_availability=1`. | Bin width, confidence interval and denominator time. | Primary observed scarcity frequency. |
+| `zero_availability_episode_count` | reconstructed | episodes/window | Number of contiguous zero-availability episodes. | Gap and continuity rules. | Scarcity frequency. |
+| `zero_availability_duration_minutes` | reconstructed | minutes/episode | Interval-censored duration of a zero-availability episode. | Lower/upper bounds and censoring flags. | Scarcity severity. |
+| `p95_zero_availability_duration` | estimated | minutes | 95th percentile of eligible complete episode durations. | Sample size and bootstrap interval; omit when sample is too small. | Tail severity. |
+| `charging_start_proxy_rate` | estimated | proxy events/hour | Eligible `available → charging` transitions divided by covered time. | This is not a vehicle-arrival rate. Include confidence interval. | Demand-pressure proxy. |
+| `release_proxy_rate` | estimated | proxy events/hour | Eligible `charging → available` transitions divided by covered time. | This is not exact session completion rate. | Throughput proxy. |
+| `observed_charging_interval_distribution` | estimated | distribution/minutes | Distribution of complete `charging` interval bounds or midpoint estimates. | Censoring treatment, gap filter, power/site strata. | Baseline behaviour and validation. |
+| `status_transition_matrix` | estimated | conditional probability matrix | Counts/proportions of valid adjacent status transitions. | Window, sample sizes and excluded gaps. | Data diagnostics and later model calibration. |
+| `station_scarcity_score` | estimated | dimensionless | A versioned summary derived only from observable scarcity components. No formula is approved yet. | Formula version, components, scaling window and uncertainty. | Candidate replacement for queue-based pressure in adaptive policy. |
+
+No derivative statistic should be materialized until its minimum history and
+coverage thresholds are defined. The current short collection period is enough
+to validate reconstruction code but not to claim stable weekly behaviour.
+
+## 8. Policy-defined variables
+
+These variables express a rule being evaluated; they are not inferred facts.
+
+| Canonical name | Class | Unit | Current prototype value | Definition/status |
+|---|---|---:|---:|---|
+| `grace_period_minutes` | policy_defined | minutes | 15 | Grace period selected by the prototype. It is not observable in the feeds unless an actual tariff encodes it. |
+| `base_idle_fee_rate` | policy_defined | EUR/min | 0.10 | Candidate fixed post-grace rate `P0`. Must be distinguished from an observed operator tariff. |
+| `demand_sensitivity_alpha` | policy_defined | dimensionless | 0.4 | Prototype scaling parameter. Current queue-based interpretation is not approved for the data-grounded MVP. |
+| `monetary_scale_beta` | policy_defined | EUR/min per index unit | 0.05 | Converts an index into a rate increment. Unit depends on the final approved formula. |
+| `curvature_gamma` | policy_defined | dimensionless | 1.2 | Curvature of the fee response. Requires sensitivity analysis. |
+| `fee_rate_cap` | policy_defined | EUR/min | not defined | A cap should be considered before any realistic policy evaluation. |
+| `policy_recalculation_interval` | policy_defined | minutes | not defined | Frequency at which an adaptive rate may change. It must not be faster than the information supporting it. |
+| `scarcity_activation_rule` | policy_defined | rule | not defined | Candidate: activate only after a sustained, quality-qualified zero-availability episode. Requires colleague agreement. |
+
+## 9. Currently unavailable concepts
+
+| Concept | Status | Why it is unavailable | Permitted next action |
+|---|---|---|---|
+| `physical_queue_length` | unavailable | OCPI/DATEX do not report waiting vehicles or rejected arrivals. | Remove it from the MVP formula, obtain another source, or propose and validate an estimator with uncertainty. |
+| `vehicle_arrival_count` | unavailable | `available → charging` observes accepted occupation, not all arrivals. | Use `charging_start_proxy_count` under its correct name. |
+| `individual_waiting_time` | unavailable | No vehicle-level arrival and service linkage exists. | Requires session/queue data or a separately validated inference model. |
+| `charging_finished_at` | unavailable | Status `charging` does not expose the moment energy transfer finishes. | Requires CDR/session/meter data. Do not equate it with `charging → available`. |
+| `post_charge_idle_minutes` | unavailable | A connected-but-not-drawing-energy state is not identifiable from current statuses. | Reformulate the MVP around availability scarcity, or obtain session/meter data. |
+| `price_response_probability` | unavailable | No price intervention or user response is observed in the current data. | External empirical evidence, pilot experiment or agreed behavioural estimator is required. |
+| `capacity_released_by_fee` | unavailable before intervention | Causal outcome requires a behavioural response and counterfactual. | Define only after an approved response model or experiment. |
+
+External municipal datasets may support validation or priors, but they do not
+automatically convert these concepts into Vilnius observations. Dataset
+comparability, infrastructure definitions, tariffs, population and collection
+methods must be documented.
+
+## 10. Fixed and adaptive policy boundary
+
+Both policies must receive the same structural metadata, observed history,
+reconstruction rules and evaluation window.
+
+The fixed policy may use an observed tariff or an explicitly chosen constant
+idle rule. The two must be labelled separately. The adaptive policy may differ
+only through versioned policy variables and a scarcity signal supported by the
+data contract.
+
+The current queue-based SII formula is retained as a colleague-proposed
+prototype, but it is not approved as the data-grounded MVP because
+`physical_queue_length` and `post_charge_idle_minutes` are unavailable. Any
+replacement must be reviewed with the model author before implementation.
+
+## 11. Acceptance rules for downstream datasets
+
+A derived dataset is acceptable only if it includes:
+
+1. canonical variable names from this document;
+2. provenance class;
+3. source table/column or formula version;
+4. entity level and aggregation dimensions;
+5. UTC boundaries plus the local timezone used for calendar features;
+6. quality filters and valid-coverage measures;
+7. lower/upper bounds for interval-censored durations;
+8. mapping confidence and cardinality where DATEX/OCPI are combined;
+9. sample size and uncertainty for every estimated variable;
+10. an explicit statement that unavailable concepts were not silently imputed.
+
+Changes to definitions require a versioned update to this document before they
+are used by `historical.py`, policy code or evaluation reports.
+
+## 12. Decisions requiring team approval
+
+The following items are intentionally unresolved in draft v0.1:
+
+1. whether the fixed baseline is the observed operator tariff, a constant test
+   fee, or two separate baselines;
+2. whether the adaptive MVP abandons post-charge idle and instead responds to
+   sustained observable scarcity;
+3. the exact formula and name of `station_scarcity_score`;
+4. minimum coverage, history length and sample size thresholds;
+5. the treatment of `reserved` and `blocked` in effective capacity;
+6. whether interval-censored event times use lower bounds, upper bounds,
+   midpoints or interval-aware estimators;
+7. which mapping-confidence threshold permits DATEX/OCPI combination;
+8. what evidence can support a behavioural response to price.

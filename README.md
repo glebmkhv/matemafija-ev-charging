@@ -20,6 +20,10 @@ python src/collect.py --once
 The source-native database design and reconciliation rules are documented in
 [`docs/database_v2.md`](docs/database_v2.md).
 
+The provenance, definitions and permitted uses of observed, reconstructed,
+estimated and policy variables are defined in
+[`docs/variable_dictionary.md`](docs/variable_dictionary.md).
+
 ## Database exploration dashboard
 
 Start collection and the dashboard together:
