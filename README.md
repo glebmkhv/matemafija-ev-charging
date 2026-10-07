@@ -31,6 +31,10 @@ Qualification thresholds and uncertainty estimation for the first derivative
 statistics are documented in
 [`docs/derivative_statistics.md`](docs/derivative_statistics.md).
 
+The versioned inputs, execution modes, events, outputs and claim boundaries of
+the common fixed/adaptive evaluation environment are defined in
+[`docs/simulator_contract.md`](docs/simulator_contract.md).
+
 ## Database exploration dashboard
 
 Start collection and the dashboard together:

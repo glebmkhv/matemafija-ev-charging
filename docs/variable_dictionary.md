@@ -251,6 +251,10 @@ A derived dataset is acceptable only if it includes:
 Changes to definitions require a versioned update to this document before they
 are used by `historical.py`, policy code or evaluation reports.
 
+The simulator boundary, including the non-causal observed-replay mode and the
+requirements for any future counterfactual mode, is defined in
+`docs/simulator_contract.md`.
+
 ## 12. Decisions requiring team approval
 
 The following items are intentionally unresolved in draft v0.1:
