@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import sqlite3
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -19,6 +20,7 @@ PARSER_VERSION = "2.0.0"
 
 OCPI_BASE_URL = "https://ev.vialietuva.lt/ocpi/2.3.0"
 DATEX_BASE_URL = "https://ev.vialietuva.lt/publicdata"
+OCPI_SOURCE_TIMEZONE = ZoneInfo("Europe/Vilnius")
 
 
 def _json(value):
@@ -37,7 +39,7 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def _parse_time(value):
+def _parse_time(value, default_timezone=timezone.utc):
     if value is None or value == "":
         return None
     candidate = str(value).strip().replace("Z", "+00:00")
@@ -46,13 +48,27 @@ def _parse_time(value):
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=default_timezone)
     return parsed.astimezone(timezone.utc)
 
 
-def _utc_text(value):
-    parsed = _parse_time(value)
+def _utc_text(value, default_timezone=timezone.utc):
+    parsed = _parse_time(value, default_timezone=default_timezone)
     return parsed.isoformat() if parsed else None
+
+
+def _has_explicit_timezone(value):
+    if value is None or value == "":
+        return False
+    try:
+        parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
+def _ocpi_utc_text(value):
+    return _utc_text(value, default_timezone=OCPI_SOURCE_TIMEZONE)
 
 
 def _float(value):
@@ -211,7 +227,8 @@ def _save_raw_payload(connection, run_id, payload_bytes, collected_at,
 
 
 def _revision(connection, source_id, entity_type, entity_key, content,
-              source_last_updated, collected_at, run_id):
+              source_last_updated, collected_at, run_id,
+              source_timezone=timezone.utc):
     normalized = _json(content)
     digest = _hash_text(normalized)
     connection.execute(
@@ -223,7 +240,7 @@ def _revision(connection, source_id, entity_type, entity_key, content,
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (source_id, entity_type, entity_key, digest, source_last_updated,
-         _utc_text(source_last_updated), normalized, normalized,
+         _utc_text(source_last_updated, default_timezone=source_timezone), normalized, normalized,
          PARSER_VERSION, collected_at),
     )
     revision_id = connection.execute(
@@ -251,8 +268,8 @@ def _canonical_status(value):
     return re.sub(r"[^a-z0-9]+", "_", str(value).strip().lower()).strip("_")
 
 
-def _quality_for_timestamp(source_time, observed_at):
-    source = _parse_time(source_time)
+def _quality_for_timestamp(source_time, observed_at, source_timezone=timezone.utc):
+    source = _parse_time(source_time, default_timezone=source_timezone)
     observed = _parse_time(observed_at)
     if source is None or observed is None:
         return None, "missing_or_invalid"
@@ -264,6 +281,15 @@ def _quality_for_timestamp(source_time, observed_at):
     if age > 86400:
         return age, "older_than_24_hours"
     return age, "current"
+
+
+def _quality_for_ocpi_timestamp(source_time, observed_at):
+    age, quality = _quality_for_timestamp(
+        source_time, observed_at, source_timezone=OCPI_SOURCE_TIMEZONE
+    )
+    if source_time not in (None, "") and not _has_explicit_timezone(source_time):
+        quality = f"{quality}_timezone_assumed_europe_vilnius"
+    return age, quality
 
 
 def _quality_issue(connection, run_id, entity_type, entity_key, field_path,
@@ -301,7 +327,8 @@ def save_ocpi_locations_snapshot(locations, database_path=DATABASE_PATH,
                 location_content = {key: value for key, value in location.items() if key != "evses"}
                 location_revision = _revision(
                     connection, source_id, "ocpi_location", location_key,
-                    location_content, location.get("last_updated"), collected_at, run_id)
+                    location_content, location.get("last_updated"), collected_at, run_id,
+                    source_timezone=OCPI_SOURCE_TIMEZONE)
                 coordinates = location.get("coordinates") or {}
                 connection.execute(
                     """
@@ -336,7 +363,7 @@ def save_ocpi_locations_snapshot(locations, database_path=DATABASE_PATH,
                      _float(coordinates.get("longitude")), location.get("parking_type"),
                      location.get("time_zone"), location.get("charging_when_closed"),
                      location.get("help_phone"), location.get("help_email"),
-                     location.get("last_updated"), _utc_text(location.get("last_updated")),
+                     location.get("last_updated"), _ocpi_utc_text(location.get("last_updated")),
                      collected_at, collected_at, location_revision),
                 )
                 _save_ocpi_location_children(connection, location, location_key,
@@ -464,7 +491,8 @@ def _save_ocpi_evse(connection, location, location_key, evse, source_id,
                                   location.get("country_code"), location.get("party_id"), uid)
     content = {key: value for key, value in evse.items() if key != "connectors"}
     revision_id = _revision(connection, source_id, "ocpi_evse", evse_key, content,
-                            evse.get("last_updated"), collected_at, run_id)
+                            evse.get("last_updated"), collected_at, run_id,
+                            source_timezone=OCPI_SOURCE_TIMEZONE)
     status_raw = evse.get("status") or "UNKNOWN"
     connection.execute(
         """INSERT INTO ocpi_evses (
@@ -484,7 +512,7 @@ def _save_ocpi_evse(connection, location, location_key, evse, source_id,
            current_revision_id=excluded.current_revision_id""",
         (evse_key, location_key, str(uid), evse.get("evse_id"), evse.get("physical_reference"),
          status_raw, _canonical_status(status_raw), evse.get("last_updated"),
-         _utc_text(evse.get("last_updated")), collected_at, collected_at, revision_id),
+         _ocpi_utc_text(evse.get("last_updated")), collected_at, collected_at, revision_id),
     )
     for index, capability in enumerate(evse.get("capabilities") or []):
         connection.execute("INSERT OR IGNORE INTO ocpi_evse_capabilities VALUES (?, ?, ?)",
@@ -496,7 +524,7 @@ def _save_ocpi_evse(connection, location, location_key, evse, source_id,
         connection.execute("INSERT OR IGNORE INTO ocpi_evse_parking_assignments VALUES (?, ?, ?, ?)",
                            (revision_id, index, assignment.get("parking_id"),
                             _json(assignment.get("evse_position"))))
-    age, quality = _quality_for_timestamp(evse.get("last_updated"), collected_at)
+    age, quality = _quality_for_ocpi_timestamp(evse.get("last_updated"), collected_at)
     connection.execute(
         """INSERT INTO ocpi_evse_status_observations (
            collection_run_id, ocpi_evse_key, observed_at, source_last_updated_raw,
@@ -504,7 +532,7 @@ def _save_ocpi_evse(connection, location, location_key, evse, source_id,
            source_timestamp_age_seconds, source_timestamp_quality)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (run_id, evse_key, collected_at, evse.get("last_updated"),
-         _utc_text(evse.get("last_updated")), status_raw, _canonical_status(status_raw),
+         _ocpi_utc_text(evse.get("last_updated")), status_raw, _canonical_status(status_raw),
          age, quality),
     )
     return evse_key
@@ -517,7 +545,8 @@ def _save_ocpi_connector(connection, location, evse_key, connector,
         source_connector_id = f"missing-source-id-at-index-{connector_index}"
     connector_key = _required_identity("ocpi-connector", evse_key, source_connector_id)
     revision_id = _revision(connection, source_id, "ocpi_connector", connector_key,
-                            connector, connector.get("last_updated"), collected_at, run_id)
+                            connector, connector.get("last_updated"), collected_at, run_id,
+                            source_timezone=OCPI_SOURCE_TIMEZONE)
     connection.execute(
         """INSERT INTO ocpi_connectors (
            ocpi_connector_key, ocpi_evse_key, source_connector_id,
@@ -540,7 +569,7 @@ def _save_ocpi_connector(connection, location, evse_key, connector,
          connector.get("format"), connector.get("power_type"), _float(connector.get("voltage")),
          _float(connector.get("amperage")), _float(connector.get("max_electric_power")),
          connector.get("terms_and_conditions"), connector.get("last_updated"),
-         _utc_text(connector.get("last_updated")), collected_at, collected_at, revision_id),
+         _ocpi_utc_text(connector.get("last_updated")), collected_at, collected_at, revision_id),
     )
     for index, capability in enumerate(connector.get("capabilities") or []):
         connection.execute("INSERT OR IGNORE INTO ocpi_connector_capabilities VALUES (?, ?, ?)",
@@ -597,7 +626,8 @@ def save_ocpi_tariffs_snapshot(tariffs, database_path=DATABASE_PATH,
                                                 tariff.get("country_code"), tariff.get("party_id"), tariff.get("id"))
                 seen.add(tariff_key)
                 revision_id = _revision(connection, source_id, "ocpi_tariff", tariff_key,
-                                        tariff, tariff.get("last_updated"), collected_at, run_id)
+                                        tariff, tariff.get("last_updated"), collected_at, run_id,
+                                        source_timezone=OCPI_SOURCE_TIMEZONE)
                 connection.execute(
                     """INSERT INTO ocpi_tariffs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?)
                        ON CONFLICT(ocpi_tariff_key) DO UPDATE SET
@@ -617,7 +647,7 @@ def save_ocpi_tariffs_snapshot(tariffs, database_path=DATABASE_PATH,
                      tariff.get("tariff_alt_url"), _json(tariff.get("min_price")),
                      _json(tariff.get("max_price")), tariff.get("start_date_time"),
                      tariff.get("end_date_time"), str(tariff.get("tax_included")) if tariff.get("tax_included") is not None else None,
-                     tariff.get("last_updated"), _utc_text(tariff.get("last_updated")),
+                     tariff.get("last_updated"), _ocpi_utc_text(tariff.get("last_updated")),
                      collected_at, collected_at, revision_id),
                 )
                 _save_tariff_children(connection, tariff, revision_id)

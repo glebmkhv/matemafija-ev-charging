@@ -33,6 +33,23 @@ the normalized data.
 - `valid_from` and `valid_to`: validity of a relationship or mapping in this
   database, not a claim about physical-world validity before observation.
 
+OCPI `last_updated` values from the Via Lietuva feed sometimes omit an offset.
+Those values are interpreted in the publisher's local `Europe/Vilnius` time
+zone and then converted to UTC. Values that contain an explicit offset always
+keep that offset. The original string remains in `source_last_updated_raw`, and
+the status-observation quality value receives the suffix
+`_timezone_assumed_europe_vilnius` whenever this assumption was necessary.
+
+Existing databases created before this rule can be audited and repaired with:
+
+```bash
+python src/repair_ocpi_timestamps.py
+python src/repair_ocpi_timestamps.py --apply
+```
+
+The first command is read-only. The second recalculates normalized OCPI UTC
+timestamps, timestamp ages and quality labels without changing raw values.
+
 ## Identity
 
 Source identities are scoped by data source and protocol identifiers. Missing
@@ -77,6 +94,14 @@ also interpreted as kilowatts with an explicit `unit_interpretation_status`.
 Missing, `null`, empty list, empty string, zero and source `UNKNOWN` values are
 not intentionally collapsed. Monetary decimals are stored as text to avoid
 binary floating-point rounding.
+
+## Modelling boundary
+
+Snapshot statuses can support observed state series and reconstructed state
+intervals. They do not directly disclose physical queues, individual arrivals,
+energy-transfer completion, or post-charge vehicle dwell time. Such quantities
+must not be labelled as observed OCPI or DATEX data. Any later estimate must
+state its estimator, assumptions, uncertainty and validation evidence.
 
 ## Security
 

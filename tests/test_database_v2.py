@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 
 from src.database_v2 import (
+    _ocpi_utc_text,
+    _quality_for_ocpi_timestamp,
     save_datex_dynamic_publication,
     save_datex_static_publication,
     save_ocpi_credentials_metadata,
@@ -127,6 +129,29 @@ DYNAMIC_XML = b'''<?xml version="1.0" encoding="UTF-8"?>
 
 
 class DatabaseV2Test(unittest.TestCase):
+    def test_timezone_naive_ocpi_timestamp_uses_vilnius_local_time(self):
+        self.assertEqual(
+            _ocpi_utc_text("2026-10-06T14:06:30"),
+            "2026-10-06T11:06:30+00:00",
+        )
+        age, quality = _quality_for_ocpi_timestamp(
+            "2026-10-06T14:06:30",
+            "2026-10-06T12:48:39+00:00",
+        )
+        self.assertEqual(age, 6129.0)
+        self.assertEqual(quality, "current_timezone_assumed_europe_vilnius")
+
+    def test_ocpi_timestamp_with_offset_keeps_its_explicit_timezone(self):
+        self.assertEqual(
+            _ocpi_utc_text("2026-10-06T14:06:30+02:00"),
+            "2026-10-06T12:06:30+00:00",
+        )
+        _, quality = _quality_for_ocpi_timestamp(
+            "2026-10-06T14:06:30+02:00",
+            "2026-10-06T12:48:39+00:00",
+        )
+        self.assertEqual(quality, "current")
+
     def test_complete_source_layers_history_and_mappings(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "database.db"
