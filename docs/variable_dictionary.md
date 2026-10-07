@@ -195,6 +195,10 @@ These variables express a rule being evaluated; they are not inferred facts.
 
 | Canonical name | Class | Unit | Current prototype value | Definition/status |
 |---|---|---:|---:|---|
+| `price_intensity_lambda` | policy_defined | ratio `[0,1]` | not defined | Strength of the adaptive adjustment only: `p = p_F1 + R_i(t) * lambda * delta_p`. It is neither coverage nor rollout time. |
+| `coverage_fraction_kappa` | policy_defined, derived | ratio `[0,1]` | derived | Unique treated entities divided by unique eligible entities at the declared site/EVSE unit; never independently entered. |
+| `rollout_state_R_i_t` | policy_defined, derived | boolean | derived | Whether entity `i` is inside a versioned half-open activation window at time `t`. |
+| `active_coverage_fraction` | policy_defined, derived | ratio `[0,1]` | derived | `sum_i R_i(t) / eligible_entity_count`; records time-varying rollout coverage. |
 | `demand_sensitivity_alpha` | policy_defined | dimensionless | 0.4 | Prototype scaling parameter. Current queue-based interpretation is not approved for the data-grounded MVP. |
 | `monetary_scale_beta` | policy_defined | EUR/min per index unit | 0.05 | Converts an index into a rate increment. Unit depends on the final approved formula. |
 | `curvature_gamma` | policy_defined | dimensionless | 1.2 | Curvature of the fee response. Requires sensitivity analysis. |

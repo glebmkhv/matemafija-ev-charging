@@ -1,6 +1,6 @@
 # Common generalized simulator contract
 
-Status: **draft v0.2**. This contract defines inputs, events, policies, outputs
+Status: **draft v0.3**. This contract defines inputs, events, policies, outputs
 and permitted claims before implementation of a simulation engine.
 
 The contract is represented in code by `src/simulation_contract.py`. The fixed
@@ -222,7 +222,65 @@ The colleague-proposed queue/post-charge-idle SII is not inserted into this
 contract as a valid data input because its required variables are unavailable.
 It remains a proposal to be reviewed separately.
 
-### 7.1 Response-model input
+### 7.1 Policy adoption input
+
+`PolicyAdoptionSpecification` prevents three different ideas from being hidden
+behind one parameter.
+
+#### Price intensity
+
+`price_intensity_lambda` is the strength of the adaptive price adjustment:
+
+```text
+0 <= lambda <= 1
+p_i(t) = p_F1,i(t) + R_i(t) * lambda * adaptive_price_delta_i(t)
+```
+
+`lambda = 0` preserves the F1 price even when an entity belongs to the rollout;
+`lambda = 1` applies the complete adaptive adjustment. Lambda is not coverage
+and not elapsed rollout time.
+
+#### Coverage
+
+The eligible and treated entity populations are explicit, unique lists at one
+declared unit: `site` or `evse`. Target coverage is derived rather than entered:
+
+```text
+kappa = number_of_treated_entities / number_of_eligible_entities
+```
+
+This prevents a supplied `kappa` from contradicting the actual rollout set.
+Treated entities must be a subset of eligible entities, and every entity must
+exist in the supplied `SiteStructure`.
+
+The current `SimulationRequest` contains one `SiteStructure`. Consequently,
+site-level coverage is currently either zero or one within a request; fractional
+coverage is available at EVSE level. A later network experiment wrapper must
+hold multiple validated site requests before cross-station `kappa` is used. The
+single-site contract must not pretend to represent city-wide partial coverage.
+
+#### Rollout state
+
+Each treated entity has one or more non-overlapping, timezone-aware activation
+windows. The time-dependent rollout indicator is:
+
+```text
+R_i(t) = 1  if t lies in an activation window for entity i
+         0  otherwise
+```
+
+Windows are half-open: `active_from <= t < active_until`; an omitted end means
+continued activation. Active coverage at a given time is derived as:
+
+```text
+kappa(t) = sum_i R_i(t) / number_of_eligible_entities
+```
+
+The adoption design has `policy_defined` provenance. Counterfactual modes
+require it even for a baseline arm (`lambda = 0` or empty treated set), ensuring
+that paired runs differ through explicit, auditable inputs.
+
+### 7.2 Response-model input
 
 `AssumptionDrivenResponseSpecification` is deliberately independent of the
 eventual adaptive price formula. It defines how a supplied price difference may
@@ -290,12 +348,14 @@ For a single UTC timestamp, the eventual engine must use a deterministic order:
 1. ingest the observed snapshot;
 2. update reconstructed observable context;
 3. emit observed transition proxies whose upper bound is this timestamp;
-4. evaluate the policy if its interval is due;
-5. emit the policy decision;
-6. in assumption-driven mode, record and apply the assumed response model;
-7. in validated counterfactual mode, apply the validated response model;
-8. generate any permitted simulated state transition;
-9. record outputs.
+4. evaluate rollout state `R_i(t)` and active coverage `kappa(t)`;
+5. evaluate the policy if its interval is due;
+6. compose F1 with `R_i(t) * lambda * adaptive_price_delta`;
+7. emit the policy decision;
+8. in assumption-driven mode, record and apply the assumed response model;
+9. in validated counterfactual mode, apply the validated response model;
+10. generate any permitted simulated state transition;
+11. record outputs.
 
 Tie-breaking and missing-snapshot behaviour must be identical for fixed and
 adaptive policies.
@@ -313,6 +373,12 @@ Each future policy decision should contain at least:
 - floor/cap application;
 - reason code;
 - exact input snapshot/run identity.
+
+Every counterfactual result also contains `AdoptionResultMetadata`: adoption
+ID/version and unit, lambda, target kappa, and minimum/maximum active coverage
+observed across the run. Active coverage may not exceed target coverage. This
+metadata is part of the result itself rather than being recoverable only from a
+request or log.
 
 `withheld` is mandatory when required evidence is unavailable. It must not be
 silently converted to a zero rate.
@@ -388,7 +454,9 @@ One comparison unit consists of matched requests with:
 - the same decision interval;
 - the same baseline-generation method and random seed for stochastic runs;
 - the same response model when policies are compared;
-- different policy ID/version and parameters only.
+- only the intended experimental dimension may differ: policy parameters,
+  price intensity, coverage set or rollout schedule. All other adoption fields
+  remain matched.
 
 Results are joined by site and evaluation timestamp. Missing or withheld
 decisions remain explicit.
@@ -443,6 +511,8 @@ Every request/result pair must preserve:
 - structure version;
 - interval/flow/scarcity estimator versions;
 - policy version and complete parameters;
+- adoption ID/version, unit, lambda, derived target/active coverage and complete
+  rollout windows;
 - execution mode and claim scope;
 - assumed response model, complete parameters, units and disclosure;
 - validated response evidence and report when applicable;

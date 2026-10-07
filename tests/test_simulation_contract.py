@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from src.simulation_contract import (
+    AdoptionUnit,
+    AdoptionResultMetadata,
     AssumptionDrivenResponseSpecification,
     BehaviouralResponseSpecification,
     ClaimScope,
@@ -14,6 +16,8 @@ from src.simulation_contract import (
     ObservedChargingPeriod,
     ObservedChargingSession,
     PolicyKind,
+    PolicyActivationWindow,
+    PolicyAdoptionSpecification,
     PolicySpecification,
     ProvenanceClass,
     SimulationEvent,
@@ -72,10 +76,32 @@ def assumed_response():
         functional_form="logit(q1) = logit(q0) + theta_release * price_delta",
         response_channels=("release",),
         affected_transitions=("charging_to_available",),
-        parameters={"theta_release": 0.5, "price_intensity": 0.25},
-        parameter_units={"theta_release": "1/EUR", "price_intensity": "ratio"},
+        parameters={"theta_release": 0.5},
+        parameter_units={"theta_release": "1/EUR"},
         supported_simulated_outcomes=("simulated_availability_ratio",),
         delay_minutes=5,
+    )
+
+
+def adoption():
+    return PolicyAdoptionSpecification(
+        adoption_id="evse-rollout",
+        adoption_version="draft-1",
+        unit=AdoptionUnit.EVSE,
+        price_intensity_lambda=0.25,
+        eligible_entity_ids=("evse-1",),
+        treated_entity_ids=("evse-1",),
+        activation_windows=(PolicyActivationWindow("evse-1", NOW),),
+    )
+
+
+def adoption_summary():
+    return AdoptionResultMetadata(
+        adoption_id="evse-rollout", adoption_version="draft-1",
+        unit=AdoptionUnit.EVSE, price_intensity_lambda=0.25,
+        target_coverage_fraction_kappa=1.0,
+        minimum_active_coverage_fraction=0.0,
+        maximum_active_coverage_fraction=1.0,
     )
 
 
@@ -175,6 +201,7 @@ class SimulationContractTest(unittest.TestCase):
             observed_timeline=(state(),),
             policy=policy(),
             execution_mode=ExecutionMode.VALIDATED_COUNTERFACTUAL,
+            adoption=adoption(),
             behavioural_response=unvalidated,
         )
         with self.assertRaisesRegex(ValueError, "validated for Vilnius"):
@@ -193,7 +220,7 @@ class SimulationContractTest(unittest.TestCase):
             request_id="assumed-2", structure=structure(),
             observed_timeline=(state(),), policy=policy(),
             execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
-            assumed_response=assumed_response(),
+            assumed_response=assumed_response(), adoption=adoption(),
         )
         with self.assertRaisesRegex(ValueError, "random_seed"):
             no_seed.validate()
@@ -202,9 +229,44 @@ class SimulationContractTest(unittest.TestCase):
             request_id="assumed-3", structure=structure(),
             observed_timeline=(state(),), policy=policy(),
             execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
-            assumed_response=assumed_response(), random_seed=42,
+            assumed_response=assumed_response(), adoption=adoption(), random_seed=42,
         )
         valid.validate()
+
+    def test_adoption_separates_intensity_coverage_and_rollout(self):
+        start = NOW
+        rollout = PolicyAdoptionSpecification(
+            adoption_id="two-evse-rollout", adoption_version="1",
+            unit=AdoptionUnit.EVSE, price_intensity_lambda=0.5,
+            eligible_entity_ids=("evse-1", "evse-2"),
+            treated_entity_ids=("evse-1",),
+            activation_windows=(PolicyActivationWindow(
+                "evse-1", start + timedelta(minutes=10),
+                start + timedelta(minutes=30),
+            ),),
+        )
+        rollout.validate({"evse-1", "evse-2"})
+        self.assertEqual(rollout.price_intensity_lambda, 0.5)
+        self.assertEqual(rollout.coverage_fraction_kappa, 0.5)
+        self.assertEqual(rollout.active_coverage_fraction(start), 0.0)
+        self.assertEqual(rollout.rollout_state("evse-1", start + timedelta(minutes=15)), 1)
+        self.assertEqual(rollout.active_coverage_fraction(start + timedelta(minutes=15)), 0.5)
+        self.assertEqual(rollout.rollout_state("evse-1", start + timedelta(minutes=30)), 0)
+
+    def test_adoption_rejects_invalid_intensity_population_and_windows(self):
+        invalid_intensity = PolicyAdoptionSpecification(
+            "rollout", "1", AdoptionUnit.EVSE, 1.1, ("evse-1",),
+            ("evse-1",), (PolicyActivationWindow("evse-1", NOW),),
+        )
+        with self.assertRaisesRegex(ValueError, "between zero and one"):
+            invalid_intensity.validate({"evse-1"})
+
+        ineligible = PolicyAdoptionSpecification(
+            "rollout", "1", AdoptionUnit.EVSE, 0.5, ("evse-1",),
+            ("evse-2",), (PolicyActivationWindow("evse-2", NOW),),
+        )
+        with self.assertRaisesRegex(ValueError, "must be eligible"):
+            ineligible.validate({"evse-1", "evse-2"})
 
     def test_assumed_parameters_cannot_be_mislabeled_as_estimated(self):
         invalid = AssumptionDrivenResponseSpecification(
@@ -248,6 +310,7 @@ class SimulationContractTest(unittest.TestCase):
             execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
             claim_scope=ClaimScope.SCENARIO_CONDITIONAL, events=(event,),
             evaluation_metrics={"simulated_availability_change": 0.1},
+            adoption_summary=adoption_summary(),
             assumption_disclosure="Conditional on an assumed release response.",
             response_model_id="release-logit-shift", response_model_version="draft-1",
         )
@@ -258,10 +321,18 @@ class SimulationContractTest(unittest.TestCase):
             execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
             claim_scope=ClaimScope.COUNTERFACTUAL_EFFECT, events=(event,),
             evaluation_metrics={"capacity_released_by_fee": 1},
+            adoption_summary=adoption_summary(),
             assumption_disclosure="Assumed.", response_model_id="release",
             response_model_version="1",
         )
         with self.assertRaises(ValueError):
+            invalid.validate()
+
+    def test_result_adoption_metadata_rejects_impossible_active_coverage(self):
+        invalid = AdoptionResultMetadata(
+            "rollout", "1", AdoptionUnit.EVSE, 0.5, 0.5, 0.0, 0.75,
+        )
+        with self.assertRaisesRegex(ValueError, "cannot exceed target"):
             invalid.validate()
 
     def test_observed_state_rejects_inconsistent_capacity_partition(self):

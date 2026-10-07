@@ -8,7 +8,7 @@ from typing import Mapping
 from zoneinfo import ZoneInfo
 
 
-CONTRACT_VERSION = "0.2.0"
+CONTRACT_VERSION = "0.3.0"
 
 
 class ProvenanceClass(str, Enum):
@@ -29,6 +29,11 @@ class ExecutionMode(str, Enum):
 class PolicyKind(str, Enum):
     FIXED = "fixed"
     ADAPTIVE = "adaptive"
+
+
+class AdoptionUnit(str, Enum):
+    SITE = "site"
+    EVSE = "evse"
 
 
 class ClaimScope(str, Enum):
@@ -242,6 +247,94 @@ class PolicySpecification:
 
 
 @dataclass(frozen=True)
+class PolicyActivationWindow:
+    """One interval where R_i(t)=1 for a treated site or EVSE."""
+    entity_id: str
+    active_from_utc: datetime
+    active_until_utc: datetime | None = None
+
+    def validate(self):
+        if not self.entity_id:
+            raise ValueError("Activation-window entity is required")
+        if self.active_from_utc.tzinfo is None:
+            raise ValueError("Activation-window start must include a timezone")
+        if self.active_until_utc is not None:
+            if self.active_until_utc.tzinfo is None:
+                raise ValueError("Activation-window end must include a timezone")
+            if self.active_until_utc <= self.active_from_utc:
+                raise ValueError("Activation-window end must be after start")
+
+    def is_active(self, instant: datetime):
+        if instant.tzinfo is None:
+            raise ValueError("Rollout evaluation time must include a timezone")
+        return (
+            self.active_from_utc <= instant
+            and (self.active_until_utc is None or instant < self.active_until_utc)
+        )
+
+
+@dataclass(frozen=True)
+class PolicyAdoptionSpecification:
+    """Separates price intensity lambda, coverage kappa and rollout R_i(t)."""
+    adoption_id: str
+    adoption_version: str
+    unit: AdoptionUnit
+    price_intensity_lambda: float
+    eligible_entity_ids: tuple[str, ...]
+    treated_entity_ids: tuple[str, ...]
+    activation_windows: tuple[PolicyActivationWindow, ...]
+    provenance: ProvenanceClass = ProvenanceClass.POLICY_DEFINED
+
+    @property
+    def coverage_fraction_kappa(self):
+        return len(self.treated_entity_ids) / len(self.eligible_entity_ids)
+
+    def rollout_state(self, entity_id: str, instant: datetime):
+        if entity_id not in self.eligible_entity_ids:
+            raise ValueError("Rollout entity is outside the eligible population")
+        return int(any(
+            window.entity_id == entity_id and window.is_active(instant)
+            for window in self.activation_windows
+        ))
+
+    def active_coverage_fraction(self, instant: datetime):
+        active = sum(self.rollout_state(entity_id, instant)
+                     for entity_id in self.eligible_entity_ids)
+        return active / len(self.eligible_entity_ids)
+
+    def validate(self, allowed_entity_ids: set[str] | None = None):
+        if not self.adoption_id or not self.adoption_version:
+            raise ValueError("Adoption identity and version are required")
+        if not 0 <= self.price_intensity_lambda <= 1:
+            raise ValueError("price_intensity_lambda must be between zero and one")
+        eligible = set(self.eligible_entity_ids)
+        treated = set(self.treated_entity_ids)
+        if not eligible or len(eligible) != len(self.eligible_entity_ids):
+            raise ValueError("Eligible rollout entities must be non-empty and unique")
+        if len(treated) != len(self.treated_entity_ids):
+            raise ValueError("Treated rollout entities must be unique")
+        if not treated <= eligible:
+            raise ValueError("Treated rollout entities must be eligible")
+        if allowed_entity_ids is not None and not eligible <= allowed_entity_ids:
+            raise ValueError("Rollout entities are absent from the supplied structure")
+        if self.provenance is not ProvenanceClass.POLICY_DEFINED:
+            raise ValueError("Adoption design must have policy-defined provenance")
+        for window in self.activation_windows:
+            window.validate()
+        window_entities = {window.entity_id for window in self.activation_windows}
+        if window_entities != treated:
+            raise ValueError("Every treated entity must have rollout windows and no others")
+        by_entity: dict[str, list[PolicyActivationWindow]] = {}
+        for window in self.activation_windows:
+            by_entity.setdefault(window.entity_id, []).append(window)
+        for windows in by_entity.values():
+            ordered = sorted(windows, key=lambda item: item.active_from_utc)
+            for previous, current in zip(ordered, ordered[1:]):
+                if previous.active_until_utc is None or previous.active_until_utc > current.active_from_utc:
+                    raise ValueError("Rollout windows for one entity cannot overlap")
+
+
+@dataclass(frozen=True)
 class AssumptionDrivenResponseSpecification:
     """A versioned, explicitly hypothetical price-response mechanism."""
     model_id: str
@@ -305,6 +398,7 @@ class SimulationRequest:
     execution_mode: ExecutionMode = ExecutionMode.OBSERVED_REPLAY
     derived_statistics: tuple[DerivedStatisticInput, ...] = ()
     observed_sessions: tuple[ObservedChargingSession, ...] = ()
+    adoption: PolicyAdoptionSpecification | None = None
     assumed_response: AssumptionDrivenResponseSpecification | None = None
     behavioural_response: BehaviouralResponseSpecification | None = None
     random_seed: int | None = None
@@ -335,6 +429,13 @@ class SimulationRequest:
             statistic.validate()
         for session in self.observed_sessions:
             session.validate()
+        if self.adoption is not None:
+            allowed_entities = (
+                {self.structure.ocpi_location_key}
+                if self.adoption.unit is AdoptionUnit.SITE
+                else {evse.ocpi_evse_key for evse in self.structure.evses}
+            )
+            self.adoption.validate(allowed_entities)
         missing = set(self.policy.required_derived_statistics) - set(statistics)
         if missing:
             raise ValueError(f"Required derivative statistics are missing: {sorted(missing)}")
@@ -355,6 +456,8 @@ class SimulationRequest:
         elif self.execution_mode is ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL:
             if self.assumed_response is None:
                 raise ValueError("Assumption-driven mode requires an assumed response")
+            if self.adoption is None:
+                raise ValueError("Assumption-driven mode requires an adoption specification")
             if self.behavioural_response is not None:
                 raise ValueError("Assumption-driven mode cannot label a response as validated")
             if self.random_seed is None:
@@ -363,6 +466,8 @@ class SimulationRequest:
         else:
             if self.behavioural_response is None:
                 raise ValueError("Validated counterfactual mode requires behavioural response")
+            if self.adoption is None:
+                raise ValueError("Validated counterfactual mode requires an adoption specification")
             if self.assumed_response is not None:
                 raise ValueError("Validated counterfactual mode cannot use assumed response parameters")
             self.behavioural_response.validate()
@@ -398,6 +503,33 @@ class SimulationEvent:
 
 
 @dataclass(frozen=True)
+class AdoptionResultMetadata:
+    adoption_id: str
+    adoption_version: str
+    unit: AdoptionUnit
+    price_intensity_lambda: float
+    target_coverage_fraction_kappa: float
+    minimum_active_coverage_fraction: float
+    maximum_active_coverage_fraction: float
+
+    def validate(self):
+        if not self.adoption_id or not self.adoption_version:
+            raise ValueError("Result adoption identity and version are required")
+        values = (
+            self.price_intensity_lambda,
+            self.target_coverage_fraction_kappa,
+            self.minimum_active_coverage_fraction,
+            self.maximum_active_coverage_fraction,
+        )
+        if any(not 0 <= value <= 1 for value in values):
+            raise ValueError("Result adoption ratios must be between zero and one")
+        if self.minimum_active_coverage_fraction > self.maximum_active_coverage_fraction:
+            raise ValueError("Minimum active coverage cannot exceed maximum")
+        if self.maximum_active_coverage_fraction > self.target_coverage_fraction_kappa:
+            raise ValueError("Active coverage cannot exceed target coverage")
+
+
+@dataclass(frozen=True)
 class SimulationResult:
     request_id: str
     policy_id: str
@@ -406,6 +538,7 @@ class SimulationResult:
     claim_scope: ClaimScope
     events: tuple[SimulationEvent, ...]
     evaluation_metrics: Mapping[str, float | int | str | bool | None]
+    adoption_summary: AdoptionResultMetadata | None = None
     assumption_disclosure: str | None = None
     response_model_id: str | None = None
     response_model_version: str | None = None
@@ -423,6 +556,8 @@ class SimulationResult:
             raise ValueError("Claim scope is inconsistent with execution mode")
         for event in self.events:
             event.validate(self.execution_mode)
+        if self.adoption_summary is not None:
+            self.adoption_summary.validate()
         forbidden_replay_metrics = {
             "capacity_released_by_fee",
             "waiting_time_reduction",
@@ -439,6 +574,8 @@ class SimulationResult:
                     self.response_model_version)):
                 raise ValueError("Observed replay must not report a response model")
         elif self.execution_mode is ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL:
+            if self.adoption_summary is None:
+                raise ValueError("Assumption-driven results require adoption metadata")
             if not all((self.assumption_disclosure, self.response_model_id,
                         self.response_model_version)):
                 raise ValueError(
@@ -451,6 +588,8 @@ class SimulationResult:
                     f"or scenario-conditional: {sorted(forbidden)}"
                 )
         else:
+            if self.adoption_summary is None:
+                raise ValueError("Validated results require adoption metadata")
             if not self.response_model_id or not self.response_model_version:
                 raise ValueError("Validated results require response model identity")
 
