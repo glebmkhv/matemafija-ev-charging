@@ -102,8 +102,8 @@ new state.
 
 | Canonical name | Class | Unit/type | Level | Definition | Uncertainty/quality | Intended use |
 |---|---|---|---|---|---|---|
-| `interval_start_lower_utc` | reconstructed | UTC timestamp | EVSE interval | Observation time of the first row in the run of equal statuses. | Lower observation bound, not exact physical start. | Interval indexing. |
-| `interval_start_upper_utc` | reconstructed | UTC timestamp | EVSE interval | For a changed state, its first observation time; previous observation provides the lower bound for the transition. | Exact start is interval-censored. | Transition uncertainty. |
+| `interval_start_lower_utc` | reconstructed | UTC timestamp | EVSE interval | Last observation of the preceding different status. Null for the first interval of an observed segment. | Lower bound for a changed-state start, not exact physical start. | Transition uncertainty. |
+| `interval_start_upper_utc` | reconstructed | UTC timestamp | EVSE interval | First observation of the interval status. | Upper bound for a changed-state start. | Interval indexing. |
 | `interval_end_lower_utc` | reconstructed | UTC timestamp | EVSE interval | Last observation time at which the interval status was seen. | Lower bound for its end. | Conservative duration. |
 | `interval_end_upper_utc` | reconstructed | UTC timestamp | EVSE interval | First subsequent observation with another status. | Null for a right-censored final interval. | Upper duration bound. |
 | `duration_lower_minutes` | reconstructed | minutes | EVSE interval | `interval_end_lower - interval_start_upper`, floored at zero. | Conservative observed duration. | Robust metrics. |
@@ -112,6 +112,8 @@ new state.
 | `left_censored` | reconstructed | boolean | EVSE interval | Interval begins at the first available observation, so its real start may be earlier. | Must be excluded from complete-duration distributions by default. | Filtering. |
 | `right_censored` | reconstructed | boolean | EVSE interval | No later different status is observed. | Must be excluded from complete-duration distributions by default. | Filtering. |
 | `contains_collection_gap` | reconstructed | boolean | EVSE interval | At least one adjacent observation gap exceeds the selected cadence tolerance. | Threshold must be recorded, initially `2 × expected cadence`. | Exclusion/sensitivity. |
+| `starts_after_collection_gap` | reconstructed | boolean | EVSE interval | This interval starts a new observed segment after a gap exceeding the cadence tolerance. | The interval is left-censored. | Exclusion/sensitivity. |
+| `ends_before_collection_gap` | reconstructed | boolean | EVSE interval | This interval ends an observed segment before a gap exceeding the cadence tolerance. | The interval is right-censored. | Exclusion/sensitivity. |
 | `transition_from`, `transition_to` | reconstructed | category pair | EVSE transition | Adjacent distinct canonical statuses. | Retain both bounding observation times. | Flow counts. |
 | `available_to_charging_transition` | reconstructed | event | EVSE | `available → charging`. | Proxy for a charging start, not a proven vehicle arrival. | Start-flow proxy. |
 | `charging_to_available_transition` | reconstructed | event | EVSE | `charging → available`. | Proxy for EVSE release, not exact charge completion. | Release-flow proxy. |
