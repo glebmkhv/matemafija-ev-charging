@@ -40,6 +40,10 @@ The baseline `available -> charging` and `charging -> available` hazard
 estimator, including local-time strata and sparse-cell fallback, is documented
 in [`docs/transition_model.md`](docs/transition_model.md).
 
+Exact observed-path replay and seeded Vilnius-local-day block-bootstrap
+trajectory generation are specified in
+[`docs/trajectory_generators.md`](docs/trajectory_generators.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

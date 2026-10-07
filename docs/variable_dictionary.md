@@ -196,6 +196,12 @@ by Vilnius weekday/weekend and local hour, and falls back to a site-wide channel
 estimate when a local cell has fewer than three target events. The estimator is
 formally withheld for sites that fail `transition_model_ready`.
 
+The baseline trajectory layer in `src/trajectory.py` either retains the exact
+observed path or resamples whole qualified Vilnius local-day blocks. It never
+bootstraps capacity components independently. Every bootstrap point retains its
+source timestamp and sampled-day identity, uses `simulated` provenance and is
+reproducible from the recorded random seed.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.

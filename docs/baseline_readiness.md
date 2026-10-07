@@ -82,6 +82,11 @@ The collector should continue running. Once the seven-day threshold is crossed,
 the assessment must be rerun because transition counts, interval censoring and
 site-level coverage can still prevent individual sites from passing.
 
+Exact observed-path replay remains available under the descriptive gate. The
+local-day block-bootstrap generator additionally requires
+`historical_profile_ready=true`; it cannot use a handful of complete-looking
+days to bypass the project-level history requirement.
+
 ## Baseline transition estimator
 
 The state-transition estimator in `src/transition_model.py` accepts only sites

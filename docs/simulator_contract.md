@@ -81,6 +81,11 @@ The mode requires a deterministic random seed so paired policy runs are
 reproducible. A future experiment runner will additionally use common random
 numbers between matched scenarios.
 
+Policy-independent baseline paths are produced by the versioned generators in
+[`trajectory_generators.md`](trajectory_generators.md). Paired policy runs must
+consume the same generated path; the bootstrap may not be rerun separately for
+fixed and adaptive policies.
+
 ### 2.3 `validated_counterfactual`
 
 This future mode permits policy decisions to alter the state trajectory. It is
