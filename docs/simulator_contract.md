@@ -7,6 +7,11 @@ The contract is represented in code by `src/simulation_contract.py`. The fixed
 tariff replay is implemented separately in `src/fixed_policy.py`; the adaptive
 formula remains to be agreed.
 
+Before constructing a run, site-level eligibility must be checked against
+`docs/baseline_readiness.md`. `assumption_driven_counterfactual` requires both
+the transition-model and factual F1 tariff gates; a merely descriptive history
+is not silently promoted into a fitted baseline model.
+
 ## 1. Purpose
 
 The common generalized simulator is one execution environment into which fixed

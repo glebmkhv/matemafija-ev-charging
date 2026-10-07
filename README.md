@@ -31,6 +31,11 @@ Qualification thresholds and uncertainty estimation for the first derivative
 statistics are documented in
 [`docs/derivative_statistics.md`](docs/derivative_statistics.md).
 
+The versioned data-sufficiency gates for descriptive replay, historical
+profiles, transition estimation, factual tariff replay and counterfactual
+simulation are defined in
+[`docs/baseline_readiness.md`](docs/baseline_readiness.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).
