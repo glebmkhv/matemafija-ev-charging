@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from src.simulation_contract import (
     BehaviouralResponseSpecification,
@@ -9,6 +10,8 @@ from src.simulation_contract import (
     ExecutionMode,
     EvseStructure,
     ObservedSystemState,
+    ObservedChargingPeriod,
+    ObservedChargingSession,
     PolicyKind,
     PolicySpecification,
     ProvenanceClass,
@@ -16,7 +19,9 @@ from src.simulation_contract import (
     SimulationRequest,
     SimulationResult,
     SiteStructure,
+    observed_system_state_from_capacity_snapshot,
 )
+from src.flow import SiteCapacitySnapshot
 
 
 NOW = datetime(2026, 10, 7, 10, tzinfo=timezone.utc)
@@ -60,12 +65,53 @@ def policy(required=()):
 
 
 class SimulationContractTest(unittest.TestCase):
+    def test_capacity_snapshot_adapter_preserves_observable_state(self):
+        snapshot = SiteCapacitySnapshot(
+            collection_run_id="run-1",
+            ocpi_location_key="site-1",
+            observation_time_utc=NOW,
+            observed_evse_count=2,
+            offered_evse_count=2,
+            available_evse_count=1,
+            charging_evse_count=1,
+            reserved_evse_count=0,
+            non_operational_evse_count=0,
+            unknown_evse_count=0,
+            blocked_evse_count=0,
+            unrecognized_status_evse_count=0,
+            indeterminate_evse_count=0,
+            effective_operational_capacity=2,
+            occupancy_proxy=0.5,
+            availability_ratio=0.5,
+            zero_availability=False,
+            valid_observation_coverage=1.0,
+            minimum_coverage_required=0.8,
+        )
+        adapted = observed_system_state_from_capacity_snapshot(snapshot)
+        self.assertEqual(adapted.availability_ratio, 0.5)
+        self.assertFalse(adapted.zero_availability_evidence)
+
     def test_observed_replay_accepts_data_grounded_request(self):
         request = SimulationRequest(
             request_id="request-1",
             structure=structure(),
             observed_timeline=(state(),),
             policy=policy(),
+        )
+        request.validate()
+
+    def test_tariff_session_requires_observed_meter_quantities(self):
+        period = ObservedChargingPeriod(
+            NOW, NOW + timedelta(minutes=30), Decimal("8.4"), 1800, 0,
+            Decimal("16.8"),
+        )
+        session = ObservedChargingSession(
+            "connector-1", NOW, NOW + timedelta(minutes=30), (period,),
+        )
+        request = SimulationRequest(
+            request_id="request-with-session", structure=structure(),
+            observed_timeline=(state(),), policy=policy(),
+            observed_sessions=(session,),
         )
         request.validate()
 

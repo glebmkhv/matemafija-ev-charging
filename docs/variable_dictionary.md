@@ -192,8 +192,6 @@ These variables express a rule being evaluated; they are not inferred facts.
 
 | Canonical name | Class | Unit | Current prototype value | Definition/status |
 |---|---|---:|---:|---|
-| `grace_period_minutes` | policy_defined | minutes | 15 | Grace period selected by the prototype. It is not observable in the feeds unless an actual tariff encodes it. |
-| `base_idle_fee_rate` | policy_defined | EUR/min | 0.10 | Candidate fixed post-grace rate `P0`. Must be distinguished from an observed operator tariff. |
 | `demand_sensitivity_alpha` | policy_defined | dimensionless | 0.4 | Prototype scaling parameter. Current queue-based interpretation is not approved for the data-grounded MVP. |
 | `monetary_scale_beta` | policy_defined | EUR/min per index unit | 0.05 | Converts an index into a rate increment. Unit depends on the final approved formula. |
 | `curvature_gamma` | policy_defined | dimensionless | 1.2 | Curvature of the fee response. Requires sensitivity analysis. |
@@ -223,10 +221,10 @@ methods must be documented.
 Both policies must receive the same structural metadata, observed history,
 reconstruction rules and evaluation window.
 
-The fixed policy may use an observed tariff or an explicitly chosen constant
-idle rule. The two must be labelled separately. The adaptive policy may differ
+The fixed policy is exclusively the observed connector-assigned OCPI tariff;
+matched DATEX pricing is corroborating evidence. The adaptive policy may differ
 only through versioned policy variables and a scarcity signal supported by the
-data contract.
+data contract. Details are specified in `docs/fixed_policy.md`.
 
 The current queue-based SII formula is retained as a colleague-proposed
 prototype, but it is not approved as the data-grounded MVP because

@@ -3,8 +3,9 @@
 Status: **draft v0.1**. This contract defines inputs, events, policies, outputs
 and permitted claims before implementation of a simulation engine.
 
-The contract is represented in code by `src/simulation_contract.py`. It does
-not yet implement fixed or adaptive policy formulas.
+The contract is represented in code by `src/simulation_contract.py`. The fixed
+tariff replay is implemented separately in `src/fixed_policy.py`; the adaptive
+formula remains to be agreed.
 
 ## 1. Purpose
 
@@ -13,6 +14,7 @@ and adaptive policies are inserted. Both policies must receive the same:
 
 - physical structure;
 - observed timeline;
+- observed Session/CDR/meter periods when monetary totals are compared;
 - reconstruction rules;
 - statistically qualified derivative inputs;
 - evaluation window;
@@ -133,6 +135,15 @@ offered_evse_count
 
 Timeline timestamps must be timezone-aware, unique and increasing.
 
+### 5.1 Observed session input for tariff comparison
+
+`ObservedChargingSession` and `ObservedChargingPeriod` carry connector-level,
+timezone-aware Session/CDR/meter quantities: energy, charging time, parking
+time and average power. Their provenance must be `observed`. Status snapshots
+cannot be converted into these quantities. Consequently a fixed/adaptive
+monetary comparison is withheld until this optional input is supplied, while
+the capacity-timeline replay remains available.
+
 ## 6. Derivative-statistic input
 
 A policy may declare named required statistics. Each
@@ -164,13 +175,10 @@ experiments must define training and evaluation windows separately.
 - explicit parameters;
 - names of required derivative statistics.
 
-Possible fixed baselines remain separate:
-
-1. `observed_tariff_replay`: reproduce a structured operator tariff where it is
-   available;
-2. `constant_test_fee`: apply an explicitly chosen constant prototype rate.
-
-They must not share one ambiguous label.
+The sole fixed baseline is the factual, component-aware OCPI tariff assigned to
+the connector. Matched DATEX pricing is retained as corroborating evidence.
+Its applicability and withholding rules are specified in
+[`fixed_policy.md`](fixed_policy.md).
 
 An adaptive policy must eventually specify:
 
@@ -341,13 +349,12 @@ Every request/result pair must preserve:
 
 ## 15. Decisions required before engine implementation
 
-1. Select one or both fixed baselines.
-2. Agree with the mathematical-model author whether observable sustained
+1. Agree with the mathematical-model author whether observable sustained
    scarcity replaces queue and post-charge idle in the MVP.
-3. Approve an adaptive signal formula.
-4. Approve fee floor, cap and recalculation interval.
-5. Decide whether adaptive decisions require statistically qualified historical
+2. Approve an adaptive signal formula.
+3. Approve fee floor, cap and recalculation interval.
+4. Decide whether adaptive decisions require statistically qualified historical
    baselines or only current qualified snapshots.
-6. Define withheld behaviour and recovery after data gaps.
-7. Approve the exact replay evaluation metrics.
-8. Decide what evidence could unlock counterfactual mode.
+5. Define withheld behaviour and recovery after data gaps.
+6. Approve the exact replay evaluation metrics.
+7. Decide what evidence could unlock counterfactual mode.

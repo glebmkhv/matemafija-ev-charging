@@ -35,6 +35,9 @@ The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).
 
+The factual observed-tariff fixed baseline is specified in
+[`docs/fixed_policy.md`](docs/fixed_policy.md).
+
 ## Database exploration dashboard
 
 Start collection and the dashboard together:

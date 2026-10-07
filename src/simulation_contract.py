@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Mapping
 from zoneinfo import ZoneInfo
@@ -137,6 +138,56 @@ class ObservedSystemState:
 
 
 @dataclass(frozen=True)
+class ObservedChargingPeriod:
+    """Observed Session/CDR/meter quantities for one homogeneous period."""
+    start_utc: datetime
+    end_utc: datetime
+    energy_kwh: Decimal = Decimal("0")
+    charging_seconds: int = 0
+    parking_seconds: int = 0
+    average_power_kw: Decimal | None = None
+    provenance: ProvenanceClass = ProvenanceClass.OBSERVED
+
+    def validate(self):
+        if self.start_utc.tzinfo is None or self.end_utc.tzinfo is None:
+            raise ValueError("Charging-period timestamps must include timezones")
+        if self.start_utc >= self.end_utc:
+            raise ValueError("Charging-period end must be after start")
+        if self.energy_kwh < 0 or self.charging_seconds < 0 or self.parking_seconds < 0:
+            raise ValueError("Charging-period quantities cannot be negative")
+        if self.charging_seconds + self.parking_seconds > (self.end_utc-self.start_utc).total_seconds()+1e-6:
+            raise ValueError("Charging plus parking time exceeds period duration")
+        if self.provenance is not ProvenanceClass.OBSERVED:
+            raise ValueError("Tariff replay accepts only observed usage quantities")
+
+
+@dataclass(frozen=True)
+class ObservedChargingSession:
+    connector_key: str
+    session_start_utc: datetime
+    session_end_utc: datetime
+    periods: tuple[ObservedChargingPeriod, ...]
+    reservation_restriction: str | None = None
+    provenance: ProvenanceClass = ProvenanceClass.OBSERVED
+
+    def validate(self):
+        if not self.connector_key or not self.periods:
+            raise ValueError("Connector and charging periods are required")
+        if self.session_start_utc.tzinfo is None or self.session_end_utc.tzinfo is None:
+            raise ValueError("Session timestamps must include timezones")
+        if self.session_start_utc >= self.session_end_utc:
+            raise ValueError("Session end must be after start")
+        previous = self.session_start_utc
+        for period in self.periods:
+            period.validate()
+            if period.start_utc < previous or period.end_utc > self.session_end_utc:
+                raise ValueError("Charging periods must be ordered and inside the session")
+            previous = period.end_utc
+        if self.provenance is not ProvenanceClass.OBSERVED:
+            raise ValueError("ObservedChargingSession must have observed provenance")
+
+
+@dataclass(frozen=True)
 class DerivedStatisticInput:
     name: str
     value: float
@@ -215,6 +266,7 @@ class SimulationRequest:
     policy: PolicySpecification
     execution_mode: ExecutionMode = ExecutionMode.OBSERVED_REPLAY
     derived_statistics: tuple[DerivedStatisticInput, ...] = ()
+    observed_sessions: tuple[ObservedChargingSession, ...] = ()
     behavioural_response: BehaviouralResponseSpecification | None = None
     contract_version: str = CONTRACT_VERSION
 
@@ -241,6 +293,8 @@ class SimulationRequest:
             raise ValueError("Derived statistic names must be unique")
         for statistic in self.derived_statistics:
             statistic.validate()
+        for session in self.observed_sessions:
+            session.validate()
         missing = set(self.policy.required_derived_statistics) - set(statistics)
         if missing:
             raise ValueError(f"Required derivative statistics are missing: {sorted(missing)}")
@@ -316,3 +370,24 @@ class SimulationResult:
                 raise ValueError(
                     f"Observed replay cannot report causal metrics: {sorted(forbidden)}"
                 )
+
+
+def observed_system_state_from_capacity_snapshot(snapshot):
+    """Adapt a flow.SiteCapacitySnapshot to the simulator input contract."""
+    state = ObservedSystemState(
+        ocpi_location_key=snapshot.ocpi_location_key,
+        observation_time_utc=snapshot.observation_time_utc,
+        offered_evse_count=snapshot.offered_evse_count,
+        available_evse_count=snapshot.available_evse_count,
+        charging_evse_count=snapshot.charging_evse_count,
+        reserved_evse_count=snapshot.reserved_evse_count,
+        non_operational_evse_count=snapshot.non_operational_evse_count,
+        indeterminate_evse_count=snapshot.indeterminate_evse_count,
+        effective_operational_capacity=snapshot.effective_operational_capacity,
+        availability_ratio=snapshot.availability_ratio,
+        occupancy_proxy=snapshot.occupancy_proxy,
+        zero_availability_evidence=snapshot.zero_availability,
+        valid_observation_coverage=snapshot.valid_observation_coverage,
+    )
+    state.validate()
+    return state
