@@ -151,9 +151,15 @@ def assess_baseline_readiness(
         complete_intervals = [item for item in site_intervals
                               if not item.left_censored and not item.right_censored
                               and not item.contains_collection_gap]
-        start_count = sum(item.available_to_charging_transition for item in site_intervals)
-        release_count = sum(item.charging_to_available_transition for item in site_intervals)
         gap_count = sum(item.contains_collection_gap for item in site_intervals)
+        start_count = sum(
+            item.status == "available" and item.transition_to == "charging"
+            for item in complete_intervals
+        )
+        release_count = sum(
+            item.status == "charging" and item.transition_to == "available"
+            for item in complete_intervals
+        )
         descriptive_ready = (
             statistic.eligible_snapshot_count >= 2
             and any(item.offered_evse_count > 0 for item in site_snapshots)

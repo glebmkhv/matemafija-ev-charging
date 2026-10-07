@@ -82,15 +82,16 @@ The collector should continue running. Once the seven-day threshold is crossed,
 the assessment must be rerun because transition counts, interval censoring and
 site-level coverage can still prevent individual sites from passing.
 
-## Handoff to the next step
+## Baseline transition estimator
 
-The next implementation step is the baseline state-transition estimator. It
-must accept only sites with `transition_model_ready=true`, preserve hour/day and
-site heterogeneity, and estimate the two observable transition channels:
+The state-transition estimator in `src/transition_model.py` accepts only sites
+with `transition_model_ready=true`, preserves supported hour/day and site
+heterogeneity, and estimates the two observable transition channels:
 
 - `available -> charging` (charging-start proxy);
 - `charging -> available` (release proxy).
 
 Operational/non-operational transitions remain a separate process. The
 estimator must not label either proxy as arrival, queue, charge completion or
-post-charge idle behaviour.
+post-charge idle behaviour. Its full estimator contract is documented in
+`docs/transition_model.md`.

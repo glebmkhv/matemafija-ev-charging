@@ -197,6 +197,11 @@ The data used to evaluate a policy must not also be silently used to train a
 required parameter when this would introduce look-ahead bias. Future
 experiments must define training and evaluation windows separately.
 
+The baseline transition process is fitted by `src/transition_model.py` under
+the rules in [`transition_model.md`](transition_model.md). It supplies
+site-specific `charging_start_proxy` and `release_proxy` hazards, not vehicle
+arrivals, queues, charge-completion times or post-charge idle durations.
+
 ## 7. Policy input
 
 `PolicySpecification` contains:

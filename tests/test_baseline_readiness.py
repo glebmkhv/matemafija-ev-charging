@@ -30,7 +30,9 @@ def snapshot(at, available, charging):
 
 def interval(index, start_transition=False, release_transition=False):
     at = START + timedelta(hours=index)
-    status = "charging" if index % 2 else "available"
+    status = ("available" if start_transition else
+              "charging" if release_transition else
+              ("charging" if index % 2 else "available"))
     return EvseStateInterval(
         ocpi_evse_key="evse-1", status=status,
         interval_start_lower_utc=at-timedelta(minutes=5),
@@ -43,7 +45,9 @@ def interval(index, start_transition=False, release_transition=False):
         contains_collection_gap=False,
         transition_from="available" if start_transition else
                         ("charging" if release_transition else None),
-        transition_to=status, available_to_charging_transition=start_transition,
+        transition_to="charging" if start_transition else
+                      ("available" if release_transition else None),
+        available_to_charging_transition=start_transition,
         charging_to_available_transition=release_transition,
     )
 

@@ -189,6 +189,13 @@ before publishing day-block-bootstrap confidence intervals. Episode-duration
 uncertainty additionally requires 20 complete episodes. Definitions and
 presentation rules are documented in `docs/derivative_statistics.md`.
 
+The initial transition implementation in `src/transition_model.py` estimates
+cause-specific site hazards and five-minute probabilities from complete,
+gap-free interval exposure. It reports Poisson rate score intervals, stratifies
+by Vilnius weekday/weekend and local hour, and falls back to a site-wide channel
+estimate when a local cell has fewer than three target events. The estimator is
+formally withheld for sites that fail `transition_model_ready`.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.
