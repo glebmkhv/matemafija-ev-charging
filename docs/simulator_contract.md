@@ -1,6 +1,6 @@
 # Common generalized simulator contract
 
-Status: **draft v0.3**. This contract defines inputs, events, policies, outputs
+Status: **draft v0.4**. This contract defines inputs, events, policies, outputs
 and permitted claims before implementation of a simulation engine.
 
 The contract is represented in code by `src/simulation_contract.py`. The fixed
@@ -297,30 +297,24 @@ that paired runs differ through explicit, auditable inputs.
 
 ### 7.2 Response-model input
 
-`AssumptionDrivenResponseSpecification` is deliberately independent of the
-eventual adaptive price formula. It defines how a supplied price difference may
-hypothetically change selected state transitions. It contains:
+`PolicyIndependentResponseContract` separates the baseline transition input,
+an external unit-checked driver, assumed parameters and the adjusted transition
+output. The response layer does not calculate a policy, scarcity signal,
+`lambda`, `kappa` or `R_i(t)`, and it cannot mutate state or own stochastic
+draws. Zero driver must reproduce the baseline.
 
-- model ID and version;
-- explicit functional form;
-- one or more response channels, initially `release` and later `start`;
-- exact affected transitions, for example `charging_to_available`;
-- complete parameter values and a unit for every parameter;
-- response delay;
-- the simulated outcomes the mechanism is allowed to support;
-- mandatory `assumed` provenance.
+`AssumptionDrivenResponseSpecification` binds a complete set of bounded assumed
+parameter values and a response delay to that contract. Its requested outcomes
+must be a subset of the contract's permitted outcomes.
 
-A proposed initial form is:
+`ResponseDriverPoint` has `policy_defined` provenance. A withheld point has no
+numeric value and cannot be applied as zero. The exact definitions, provenance
+chain and safety invariants are specified in
+[`response_contract.md`](response_contract.md).
 
-```text
-logit(q_release,1)
-    = logit(q_release,0)
-    + theta_release * price_intensity * adaptive_price_delta(t - delay)
-```
-
-This equation is not yet an implemented or approved behavioural model. The
-contract merely provides a safe slot for it. `theta_release` cannot be described
-as estimated until it has an identified evidence source and estimator.
+No release functional form or pricing driver is approved by this step. Those
+belong to the following release-channel implementation and later policy
+integration steps respectively.
 
 `BehaviouralResponseSpecification` remains reserved for validated
 counterfactual execution. It requires evidence metadata, a validation report,
@@ -530,6 +524,7 @@ Every request/result pair must preserve:
   rollout windows;
 - execution mode and claim scope;
 - assumed response model, complete parameters, units and disclosure;
+- response contract ID/version, driver name/unit and withheld decisions;
 - validated response evidence and report when applicable;
 - timezone and decision interval;
 - qualification thresholds;

@@ -4,11 +4,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+import math
 from typing import Mapping
 from zoneinfo import ZoneInfo
 
 
-CONTRACT_VERSION = "0.3.0"
+CONTRACT_VERSION = "0.4.0"
 
 
 class ProvenanceClass(str, Enum):
@@ -40,6 +41,12 @@ class ClaimScope(str, Enum):
     MECHANISM_ONLY = "mechanism_only"
     SCENARIO_CONDITIONAL = "scenario_conditional"
     COUNTERFACTUAL_EFFECT = "counterfactual_effect"
+
+
+class ResponseMonotonicity(str, Enum):
+    NONDECREASING = "nondecreasing"
+    NONINCREASING = "nonincreasing"
+    UNRESTRICTED = "unrestricted"
 
 
 class EventType(str, Enum):
@@ -335,34 +342,167 @@ class PolicyAdoptionSpecification:
 
 
 @dataclass(frozen=True)
+class ResponseDriverContract:
+    """Policy output consumed by a response mechanism, not a policy formula."""
+    name: str
+    unit: str
+    zero_means_no_intervention: bool = True
+
+    def validate(self):
+        if not self.name or not self.unit:
+            raise ValueError("Response driver name and unit are required")
+        if not self.zero_means_no_intervention:
+            raise ValueError("Response drivers must preserve identity at zero")
+
+
+@dataclass(frozen=True)
+class ResponseParameterDefinition:
+    name: str
+    unit: str
+    lower_bound: float | None = None
+    upper_bound: float | None = None
+    provenance: ProvenanceClass = ProvenanceClass.ASSUMED
+
+    def validate(self):
+        if not self.name or not self.unit:
+            raise ValueError("Response parameter name and unit are required")
+        if (self.lower_bound is not None and self.upper_bound is not None
+                and self.lower_bound > self.upper_bound):
+            raise ValueError("Response parameter bounds are inconsistent")
+        if self.provenance is not ProvenanceClass.ASSUMED:
+            raise ValueError("Hypothetical parameter definitions must be assumed")
+
+
+@dataclass(frozen=True)
+class PolicyIndependentResponseContract:
+    """Boundary between any policy signal and one state-transition channel."""
+    contract_id: str
+    contract_version: str
+    channel_id: str
+    source_status: str
+    destination_status: str
+    baseline_input_name: str
+    baseline_input_unit: str
+    response_output_name: str
+    response_output_unit: str
+    driver: ResponseDriverContract
+    functional_form: str
+    parameter_definitions: tuple[ResponseParameterDefinition, ...]
+    monotonicity: ResponseMonotonicity
+    supported_simulated_outcomes: tuple[str, ...]
+    forbidden_statuses: tuple[str, ...] = (
+        "outoforder", "inoperative", "unknown", "blocked",
+    )
+    identity_at_zero_driver: bool = True
+    accepts_withheld_driver: bool = False
+    policy_independent: bool = True
+    deterministic_given_inputs: bool = True
+    mutates_state_directly: bool = False
+
+    @property
+    def affected_transition(self):
+        return f"{self.source_status}_to_{self.destination_status}"
+
+    def validate(self):
+        identity_fields = (
+            self.contract_id, self.contract_version, self.channel_id,
+            self.source_status, self.destination_status,
+            self.baseline_input_name, self.baseline_input_unit,
+            self.response_output_name, self.response_output_unit,
+            self.functional_form,
+        )
+        if not all(identity_fields):
+            raise ValueError("Response contract identity and mapping are incomplete")
+        if self.source_status == self.destination_status:
+            raise ValueError("Response transition must change state")
+        self.driver.validate()
+        names = [item.name for item in self.parameter_definitions]
+        if not names or len(names) != len(set(names)):
+            raise ValueError("Response parameter definitions must be non-empty and unique")
+        for parameter in self.parameter_definitions:
+            parameter.validate()
+        if not self.supported_simulated_outcomes:
+            raise ValueError("Response contract must declare supported outcomes")
+        if len(self.supported_simulated_outcomes) != len(set(self.supported_simulated_outcomes)):
+            raise ValueError("Supported response outcomes must be unique")
+        if self.source_status in self.forbidden_statuses or self.destination_status in self.forbidden_statuses:
+            raise ValueError("Policy response cannot modify a forbidden equipment/data status")
+        if not isinstance(self.monotonicity, ResponseMonotonicity):
+            raise ValueError("Response monotonicity must use the declared enumeration")
+        if not self.identity_at_zero_driver:
+            raise ValueError("Response must equal baseline when the driver is zero")
+        if not self.policy_independent:
+            raise ValueError("Response contract must remain policy-independent")
+        if not self.deterministic_given_inputs or self.mutates_state_directly:
+            raise ValueError("Response layer must be deterministic and must not mutate state")
+
+
+@dataclass(frozen=True)
+class ResponseDriverPoint:
+    entity_id: str
+    effective_at_utc: datetime
+    driver_name: str
+    driver_unit: str
+    value: float | None
+    withheld: bool = False
+    reason_code: str | None = None
+    provenance: ProvenanceClass = ProvenanceClass.POLICY_DEFINED
+
+    def validate(self, contract: PolicyIndependentResponseContract):
+        if not self.entity_id or self.effective_at_utc.tzinfo is None:
+            raise ValueError("Response driver requires entity and aware timestamp")
+        if (self.driver_name != contract.driver.name
+                or self.driver_unit != contract.driver.unit):
+            raise ValueError("Response driver does not match its contract")
+        if self.withheld:
+            if self.value is not None or not self.reason_code:
+                raise ValueError("Withheld driver requires no value and a reason")
+            if not contract.accepts_withheld_driver:
+                raise ValueError("Withheld driver cannot be applied as a response")
+        elif self.value is None:
+            raise ValueError("Active response driver requires a value")
+        elif (isinstance(self.value, bool) or not isinstance(self.value, (int, float))
+              or not math.isfinite(self.value)):
+            raise ValueError("Active response driver value must be finite numeric")
+        if self.provenance is not ProvenanceClass.POLICY_DEFINED:
+            raise ValueError("Response driver must have policy-defined provenance")
+
+
+@dataclass(frozen=True)
 class AssumptionDrivenResponseSpecification:
-    """A versioned, explicitly hypothetical price-response mechanism."""
+    """Scenario values applied to a policy-independent response contract."""
     model_id: str
     model_version: str
-    functional_form: str
-    response_channels: tuple[str, ...]
-    affected_transitions: tuple[str, ...]
-    parameters: Mapping[str, float | int | str | bool]
-    parameter_units: Mapping[str, str]
+    contract: PolicyIndependentResponseContract
+    parameters: Mapping[str, float]
     supported_simulated_outcomes: tuple[str, ...]
     delay_minutes: int = 0
     provenance: ProvenanceClass = ProvenanceClass.ASSUMED
 
     def validate(self):
-        if not self.model_id or not self.model_version or not self.functional_form:
-            raise ValueError("Assumed response identity and functional form are required")
-        if not self.response_channels or len(self.response_channels) != len(set(self.response_channels)):
-            raise ValueError("Assumed response channels must be non-empty and unique")
-        if not self.affected_transitions or len(self.affected_transitions) != len(set(self.affected_transitions)):
-            raise ValueError("Affected transitions must be non-empty and unique")
-        if not self.parameters:
-            raise ValueError("Assumed response parameters are required")
-        if set(self.parameters) != set(self.parameter_units):
-            raise ValueError("Every assumed parameter must have exactly one declared unit")
+        if not self.model_id or not self.model_version:
+            raise ValueError("Assumed response identity is required")
+        self.contract.validate()
+        definitions = {item.name: item for item in self.contract.parameter_definitions}
+        if set(self.parameters) != set(definitions):
+            raise ValueError("Response values must match contract parameters exactly")
+        for name, value in self.parameters.items():
+            definition = definitions[name]
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value)):
+                raise ValueError(f"Response parameter {name} must be finite numeric")
+            if definition.lower_bound is not None and value < definition.lower_bound:
+                raise ValueError(f"Response parameter {name} is below its lower bound")
+            if definition.upper_bound is not None and value > definition.upper_bound:
+                raise ValueError(f"Response parameter {name} is above its upper bound")
         if self.delay_minutes < 0:
             raise ValueError("Response delay cannot be negative")
         if not self.supported_simulated_outcomes:
             raise ValueError("Assumed response must declare supported simulated outcomes")
+        if not set(self.supported_simulated_outcomes) <= set(
+            self.contract.supported_simulated_outcomes
+        ):
+            raise ValueError("Assumed response requests outcomes outside its contract")
         if self.provenance is not ProvenanceClass.ASSUMED:
             raise ValueError("Hypothetical response parameters must have assumed provenance")
 

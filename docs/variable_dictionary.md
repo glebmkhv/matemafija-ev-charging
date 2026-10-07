@@ -202,6 +202,13 @@ bootstraps capacity components independently. Every bootstrap point retains its
 source timestamp and sampled-day identity, uses `simulated` provenance and is
 reproducible from the recorded random seed.
 
+The response boundary is policy-independent. Baseline transition quantities
+retain `estimated` provenance, an external response driver is `policy_defined`,
+scenario sensitivity and delay are `assumed`, and adjusted transition
+quantities are `simulated`. A withheld driver has no numeric value and is never
+reinterpreted as zero. The formal contract is documented in
+`docs/response_contract.md`.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.

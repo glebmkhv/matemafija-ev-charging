@@ -16,10 +16,15 @@ from src.simulation_contract import (
     ObservedChargingPeriod,
     ObservedChargingSession,
     PolicyKind,
+    PolicyIndependentResponseContract,
     PolicyActivationWindow,
     PolicyAdoptionSpecification,
     PolicySpecification,
     ProvenanceClass,
+    ResponseDriverContract,
+    ResponseDriverPoint,
+    ResponseMonotonicity,
+    ResponseParameterDefinition,
     SimulationEvent,
     SimulationRequest,
     SimulationResult,
@@ -69,16 +74,34 @@ def policy(required=()):
     )
 
 
+def response_contract():
+    return PolicyIndependentResponseContract(
+        contract_id="generic-release-channel",
+        contract_version="1",
+        channel_id="release_proxy",
+        source_status="charging",
+        destination_status="available",
+        baseline_input_name="release_hazard_per_hour",
+        baseline_input_unit="1/hour",
+        response_output_name="adjusted_release_hazard_per_hour",
+        response_output_unit="1/hour",
+        driver=ResponseDriverContract("policy_adjustment", "EUR/min"),
+        functional_form="link(adjusted) = link(baseline) + theta * driver",
+        parameter_definitions=(ResponseParameterDefinition(
+            "theta_release", "min/EUR", lower_bound=0,
+        ),),
+        monotonicity=ResponseMonotonicity.NONDECREASING,
+        supported_simulated_outcomes=("simulated_release_count",),
+    )
+
+
 def assumed_response():
     return AssumptionDrivenResponseSpecification(
         model_id="release-logit-shift",
         model_version="draft-1",
-        functional_form="logit(q1) = logit(q0) + theta_release * price_delta",
-        response_channels=("release",),
-        affected_transitions=("charging_to_available",),
+        contract=response_contract(),
         parameters={"theta_release": 0.5},
-        parameter_units={"theta_release": "1/EUR"},
-        supported_simulated_outcomes=("simulated_availability_ratio",),
+        supported_simulated_outcomes=("simulated_release_count",),
         delay_minutes=5,
     )
 
@@ -270,16 +293,67 @@ class SimulationContractTest(unittest.TestCase):
 
     def test_assumed_parameters_cannot_be_mislabeled_as_estimated(self):
         invalid = AssumptionDrivenResponseSpecification(
-            model_id="release", model_version="1", functional_form="logit_shift",
-            response_channels=("release",),
-            affected_transitions=("charging_to_available",),
+            model_id="release", model_version="1", contract=response_contract(),
             parameters={"theta_release": 0.5},
-            parameter_units={"theta_release": "1/EUR"},
             supported_simulated_outcomes=("simulated_release_count",),
             provenance=ProvenanceClass.ESTIMATED,
         )
         with self.assertRaisesRegex(ValueError, "assumed provenance"):
             invalid.validate()
+
+    def test_response_contract_is_policy_independent_and_unit_checked(self):
+        contract = response_contract()
+        contract.validate()
+        self.assertTrue(contract.identity_at_zero_driver)
+        self.assertEqual(contract.affected_transition, "charging_to_available")
+        point = ResponseDriverPoint(
+            entity_id="evse-1", effective_at_utc=NOW,
+            driver_name="policy_adjustment", driver_unit="EUR/min", value=0.08,
+        )
+        point.validate(contract)
+        invalid_unit = ResponseDriverPoint(
+            entity_id="evse-1", effective_at_utc=NOW,
+            driver_name="policy_adjustment", driver_unit="EUR/kWh", value=0.08,
+        )
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            invalid_unit.validate(contract)
+
+    def test_response_contract_rejects_equipment_transition_and_withheld_signal(self):
+        equipment = PolicyIndependentResponseContract(
+            contract_id="bad", contract_version="1", channel_id="bad",
+            source_status="outoforder", destination_status="available",
+            baseline_input_name="hazard", baseline_input_unit="1/hour",
+            response_output_name="adjusted_hazard", response_output_unit="1/hour",
+            driver=ResponseDriverContract("signal", "EUR/min"),
+            functional_form="identity",
+            parameter_definitions=(ResponseParameterDefinition("theta", "min/EUR"),),
+            monotonicity=ResponseMonotonicity.UNRESTRICTED,
+            supported_simulated_outcomes=("state",),
+        )
+        with self.assertRaisesRegex(ValueError, "forbidden"):
+            equipment.validate()
+        withheld = ResponseDriverPoint(
+            entity_id="evse-1", effective_at_utc=NOW,
+            driver_name="policy_adjustment", driver_unit="EUR/min",
+            value=None, withheld=True, reason_code="missing_tariff",
+        )
+        with self.assertRaisesRegex(ValueError, "cannot be applied"):
+            withheld.validate(response_contract())
+
+    def test_assumed_response_values_must_match_contract_and_bounds(self):
+        missing = AssumptionDrivenResponseSpecification(
+            model_id="release", model_version="1", contract=response_contract(),
+            parameters={}, supported_simulated_outcomes=("simulated_release_count",),
+        )
+        with self.assertRaisesRegex(ValueError, "match contract parameters"):
+            missing.validate()
+        below_bound = AssumptionDrivenResponseSpecification(
+            model_id="release", model_version="1", contract=response_contract(),
+            parameters={"theta_release": -0.1},
+            supported_simulated_outcomes=("simulated_release_count",),
+        )
+        with self.assertRaisesRegex(ValueError, "below its lower bound"):
+            below_bound.validate()
 
     def test_replay_result_rejects_causal_claims_and_simulated_events(self):
         result = SimulationResult(

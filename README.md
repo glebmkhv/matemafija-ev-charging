@@ -44,6 +44,10 @@ Exact observed-path replay and seeded Vilnius-local-day block-bootstrap
 trajectory generation are specified in
 [`docs/trajectory_generators.md`](docs/trajectory_generators.md).
 
+The policy-independent boundary between baseline transitions, external policy
+signals and explicitly assumed response parameters is defined in
+[`docs/response_contract.md`](docs/response_contract.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).
