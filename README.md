@@ -24,6 +24,9 @@ The provenance, definitions and permitted uses of observed, reconstructed,
 estimated and policy variables are defined in
 [`docs/variable_dictionary.md`](docs/variable_dictionary.md).
 
+Observable evidence of charging-capacity scarcity, its censoring rules and its
+limits are defined in [`docs/scarcity_metrics.md`](docs/scarcity_metrics.md).
+
 ## Database exploration dashboard
 
 Start collection and the dashboard together:

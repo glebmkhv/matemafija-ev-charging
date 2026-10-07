@@ -148,6 +148,9 @@ Every output must record `bin_start`, `bin_end`, timezone and bin width.
 | `release_proxy_count` | reconstructed | events/bin | site/bin | Count of `charging → available` transitions. | Capacity-release proxy. |
 | `net_available_change` | reconstructed | EVSE/bin | site/bin | Last minus first available count within a bin. | Descriptive dynamics. |
 | `valid_observation_coverage` | reconstructed | ratio | site/bin | Valid observed EVSE-time divided by expected EVSE-time. | Mandatory quality weight/filter. |
+| `operational_scarcity_ratio` | reconstructed | ratio | site/snapshot | `1 - availability_ratio` for an eligible snapshot. | Observable capacity-pressure evidence; not a queue measure. |
+| `equipment_unavailability_ratio` | reconstructed | ratio | site/snapshot | `non_operational_evse_count / offered_evse_count`. | Separates failure-driven capacity loss from operational scarcity. |
+| `indeterminate_capacity_ratio` | reconstructed | ratio | site/snapshot | `indeterminate_evse_count / offered_evse_count`. | Quantifies how much capacity cannot be classified. |
 
 The initial implementation in `src/flow.py` produces source-native OCPI
 location snapshots and UTC transition bins. It does not combine DATEX and OCPI.
@@ -162,7 +165,8 @@ as site, local weekday and local hour.
 | Canonical name | Class | Unit | Definition | Minimum reporting requirements | Intended use |
 |---|---|---|---|---|---|
 | `mean_availability_ratio` | estimated | ratio | Mean of valid `availability_ratio` values. | Window, bins, coverage, sample count, standard error or bootstrap interval. | Normal operating profile. |
-| `p_zero_availability` | estimated | probability | Valid time share with `zero_availability=1`. | Bin width, confidence interval and denominator time. | Primary observed scarcity frequency. |
+| `zero_availability_snapshot_share` | reconstructed/descriptive | ratio | Eligible snapshots with `zero_availability=1` divided by all eligible snapshots. | Coverage threshold, cadence and denominator count. It is not yet a probability. | Primary descriptive scarcity frequency. |
+| `p_zero_availability` | estimated | probability | Time-weighted estimate of zero availability. | Estimator, bin width, confidence interval and denominator time. Not implemented yet. | Later derivative statistic. |
 | `zero_availability_episode_count` | reconstructed | episodes/window | Number of contiguous zero-availability episodes. | Gap and continuity rules. | Scarcity frequency. |
 | `zero_availability_duration_minutes` | reconstructed | minutes/episode | Interval-censored duration of a zero-availability episode. | Lower/upper bounds and censoring flags. | Scarcity severity. |
 | `p95_zero_availability_duration` | estimated | minutes | 95th percentile of eligible complete episode durations. | Sample size and bootstrap interval; omit when sample is too small. | Tail severity. |
