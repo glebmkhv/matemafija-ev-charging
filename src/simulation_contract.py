@@ -8,7 +8,7 @@ from typing import Mapping
 from zoneinfo import ZoneInfo
 
 
-CONTRACT_VERSION = "0.1.0"
+CONTRACT_VERSION = "0.2.0"
 
 
 class ProvenanceClass(str, Enum):
@@ -16,11 +16,13 @@ class ProvenanceClass(str, Enum):
     RECONSTRUCTED = "reconstructed"
     ESTIMATED = "estimated"
     POLICY_DEFINED = "policy_defined"
+    ASSUMED = "assumed"
     SIMULATED = "simulated"
 
 
 class ExecutionMode(str, Enum):
     OBSERVED_REPLAY = "observed_replay"
+    ASSUMPTION_DRIVEN_COUNTERFACTUAL = "assumption_driven_counterfactual"
     VALIDATED_COUNTERFACTUAL = "validated_counterfactual"
 
 
@@ -31,6 +33,7 @@ class PolicyKind(str, Enum):
 
 class ClaimScope(str, Enum):
     MECHANISM_ONLY = "mechanism_only"
+    SCENARIO_CONDITIONAL = "scenario_conditional"
     COUNTERFACTUAL_EFFECT = "counterfactual_effect"
 
 
@@ -39,6 +42,8 @@ class EventType(str, Enum):
     OBSERVED_STATUS_TRANSITION = "observed_status_transition"
     POLICY_EVALUATION = "policy_evaluation"
     POLICY_ACTION = "policy_action"
+    RESPONSE_ASSUMPTION_APPLIED = "response_assumption_applied"
+    SIMULATED_STATE_TRANSITION = "simulated_state_transition"
     COUNTERFACTUAL_BEHAVIOUR_CHANGE = "counterfactual_behaviour_change"
     COUNTERFACTUAL_CAPACITY_RELEASE = "counterfactual_capacity_release"
 
@@ -237,6 +242,39 @@ class PolicySpecification:
 
 
 @dataclass(frozen=True)
+class AssumptionDrivenResponseSpecification:
+    """A versioned, explicitly hypothetical price-response mechanism."""
+    model_id: str
+    model_version: str
+    functional_form: str
+    response_channels: tuple[str, ...]
+    affected_transitions: tuple[str, ...]
+    parameters: Mapping[str, float | int | str | bool]
+    parameter_units: Mapping[str, str]
+    supported_simulated_outcomes: tuple[str, ...]
+    delay_minutes: int = 0
+    provenance: ProvenanceClass = ProvenanceClass.ASSUMED
+
+    def validate(self):
+        if not self.model_id or not self.model_version or not self.functional_form:
+            raise ValueError("Assumed response identity and functional form are required")
+        if not self.response_channels or len(self.response_channels) != len(set(self.response_channels)):
+            raise ValueError("Assumed response channels must be non-empty and unique")
+        if not self.affected_transitions or len(self.affected_transitions) != len(set(self.affected_transitions)):
+            raise ValueError("Affected transitions must be non-empty and unique")
+        if not self.parameters:
+            raise ValueError("Assumed response parameters are required")
+        if set(self.parameters) != set(self.parameter_units):
+            raise ValueError("Every assumed parameter must have exactly one declared unit")
+        if self.delay_minutes < 0:
+            raise ValueError("Response delay cannot be negative")
+        if not self.supported_simulated_outcomes:
+            raise ValueError("Assumed response must declare supported simulated outcomes")
+        if self.provenance is not ProvenanceClass.ASSUMED:
+            raise ValueError("Hypothetical response parameters must have assumed provenance")
+
+
+@dataclass(frozen=True)
 class BehaviouralResponseSpecification:
     model_id: str
     model_version: str
@@ -267,7 +305,9 @@ class SimulationRequest:
     execution_mode: ExecutionMode = ExecutionMode.OBSERVED_REPLAY
     derived_statistics: tuple[DerivedStatisticInput, ...] = ()
     observed_sessions: tuple[ObservedChargingSession, ...] = ()
+    assumed_response: AssumptionDrivenResponseSpecification | None = None
     behavioural_response: BehaviouralResponseSpecification | None = None
+    random_seed: int | None = None
     contract_version: str = CONTRACT_VERSION
 
     def validate(self):
@@ -307,12 +347,24 @@ class SimulationRequest:
                 f"Required derivative statistics are not qualified: {unqualified}"
             )
 
+        if self.random_seed is not None and self.random_seed < 0:
+            raise ValueError("random_seed must be non-negative")
         if self.execution_mode is ExecutionMode.OBSERVED_REPLAY:
+            if self.assumed_response is not None or self.behavioural_response is not None:
+                raise ValueError("Observed replay must not include a response model")
+        elif self.execution_mode is ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL:
+            if self.assumed_response is None:
+                raise ValueError("Assumption-driven mode requires an assumed response")
             if self.behavioural_response is not None:
-                raise ValueError("Observed replay must not include behavioural response")
+                raise ValueError("Assumption-driven mode cannot label a response as validated")
+            if self.random_seed is None:
+                raise ValueError("Assumption-driven mode requires a deterministic random_seed")
+            self.assumed_response.validate()
         else:
             if self.behavioural_response is None:
-                raise ValueError("Counterfactual mode requires behavioural response")
+                raise ValueError("Validated counterfactual mode requires behavioural response")
+            if self.assumed_response is not None:
+                raise ValueError("Validated counterfactual mode cannot use assumed response parameters")
             self.behavioural_response.validate()
 
 
@@ -327,12 +379,22 @@ class SimulationEvent:
         if self.event_time_utc.tzinfo is None:
             raise ValueError("Event timestamp must include a timezone")
         counterfactual_types = {
+            EventType.SIMULATED_STATE_TRANSITION,
             EventType.COUNTERFACTUAL_BEHAVIOUR_CHANGE,
             EventType.COUNTERFACTUAL_CAPACITY_RELEASE,
         }
         if execution_mode is ExecutionMode.OBSERVED_REPLAY:
             if self.event_type in counterfactual_types or self.provenance is ProvenanceClass.SIMULATED:
                 raise ValueError("Observed replay cannot emit counterfactual events")
+            if self.event_type is EventType.RESPONSE_ASSUMPTION_APPLIED:
+                raise ValueError("Observed replay cannot apply response assumptions")
+        if self.event_type is EventType.RESPONSE_ASSUMPTION_APPLIED:
+            if execution_mode is not ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL:
+                raise ValueError("Response-assumption events require assumption-driven mode")
+            if self.provenance is not ProvenanceClass.ASSUMED:
+                raise ValueError("Response-assumption events must have assumed provenance")
+        if self.event_type in counterfactual_types and self.provenance is not ProvenanceClass.SIMULATED:
+            raise ValueError("Counterfactual state events must have simulated provenance")
 
 
 @dataclass(frozen=True)
@@ -344,16 +406,19 @@ class SimulationResult:
     claim_scope: ClaimScope
     events: tuple[SimulationEvent, ...]
     evaluation_metrics: Mapping[str, float | int | str | bool | None]
+    assumption_disclosure: str | None = None
+    response_model_id: str | None = None
+    response_model_version: str | None = None
     contract_version: str = CONTRACT_VERSION
 
     def validate(self):
         if self.contract_version != CONTRACT_VERSION:
             raise ValueError("Unsupported simulator result contract version")
-        expected_scope = (
-            ClaimScope.MECHANISM_ONLY
-            if self.execution_mode is ExecutionMode.OBSERVED_REPLAY
-            else ClaimScope.COUNTERFACTUAL_EFFECT
-        )
+        expected_scope = {
+            ExecutionMode.OBSERVED_REPLAY: ClaimScope.MECHANISM_ONLY,
+            ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL: ClaimScope.SCENARIO_CONDITIONAL,
+            ExecutionMode.VALIDATED_COUNTERFACTUAL: ClaimScope.COUNTERFACTUAL_EFFECT,
+        }[self.execution_mode]
         if self.claim_scope is not expected_scope:
             raise ValueError("Claim scope is inconsistent with execution mode")
         for event in self.events:
@@ -370,6 +435,24 @@ class SimulationResult:
                 raise ValueError(
                     f"Observed replay cannot report causal metrics: {sorted(forbidden)}"
                 )
+            if any((self.assumption_disclosure, self.response_model_id,
+                    self.response_model_version)):
+                raise ValueError("Observed replay must not report a response model")
+        elif self.execution_mode is ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL:
+            if not all((self.assumption_disclosure, self.response_model_id,
+                        self.response_model_version)):
+                raise ValueError(
+                    "Assumption-driven results require model identity and disclosure"
+                )
+            forbidden = forbidden_replay_metrics & set(self.evaluation_metrics)
+            if forbidden:
+                raise ValueError(
+                    "Assumption-driven metrics must be explicitly named as simulated "
+                    f"or scenario-conditional: {sorted(forbidden)}"
+                )
+        else:
+            if not self.response_model_id or not self.response_model_version:
+                raise ValueError("Validated results require response model identity")
 
 
 def observed_system_state_from_capacity_snapshot(snapshot):

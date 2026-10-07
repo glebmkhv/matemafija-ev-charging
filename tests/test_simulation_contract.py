@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from src.simulation_contract import (
+    AssumptionDrivenResponseSpecification,
     BehaviouralResponseSpecification,
     ClaimScope,
     DerivedStatisticInput,
@@ -61,6 +62,20 @@ def policy(required=()):
         kind=PolicyKind.ADAPTIVE,
         parameters={"base_rate_eur_per_min": 0.10},
         required_derived_statistics=required,
+    )
+
+
+def assumed_response():
+    return AssumptionDrivenResponseSpecification(
+        model_id="release-logit-shift",
+        model_version="draft-1",
+        functional_form="logit(q1) = logit(q0) + theta_release * price_delta",
+        response_channels=("release",),
+        affected_transitions=("charging_to_available",),
+        parameters={"theta_release": 0.5, "price_intensity": 0.25},
+        parameter_units={"theta_release": "1/EUR", "price_intensity": "ratio"},
+        supported_simulated_outcomes=("simulated_availability_ratio",),
+        delay_minutes=5,
     )
 
 
@@ -165,6 +180,45 @@ class SimulationContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "validated for Vilnius"):
             request.validate()
 
+    def test_assumption_driven_mode_requires_assumed_response_and_seed(self):
+        missing = SimulationRequest(
+            request_id="assumed-1", structure=structure(),
+            observed_timeline=(state(),), policy=policy(),
+            execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
+        )
+        with self.assertRaisesRegex(ValueError, "requires an assumed response"):
+            missing.validate()
+
+        no_seed = SimulationRequest(
+            request_id="assumed-2", structure=structure(),
+            observed_timeline=(state(),), policy=policy(),
+            execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
+            assumed_response=assumed_response(),
+        )
+        with self.assertRaisesRegex(ValueError, "random_seed"):
+            no_seed.validate()
+
+        valid = SimulationRequest(
+            request_id="assumed-3", structure=structure(),
+            observed_timeline=(state(),), policy=policy(),
+            execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
+            assumed_response=assumed_response(), random_seed=42,
+        )
+        valid.validate()
+
+    def test_assumed_parameters_cannot_be_mislabeled_as_estimated(self):
+        invalid = AssumptionDrivenResponseSpecification(
+            model_id="release", model_version="1", functional_form="logit_shift",
+            response_channels=("release",),
+            affected_transitions=("charging_to_available",),
+            parameters={"theta_release": 0.5},
+            parameter_units={"theta_release": "1/EUR"},
+            supported_simulated_outcomes=("simulated_release_count",),
+            provenance=ProvenanceClass.ESTIMATED,
+        )
+        with self.assertRaisesRegex(ValueError, "assumed provenance"):
+            invalid.validate()
+
     def test_replay_result_rejects_causal_claims_and_simulated_events(self):
         result = SimulationResult(
             request_id="request-1",
@@ -181,6 +235,34 @@ class SimulationContractTest(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             result.validate()
+
+    def test_assumption_result_requires_conditional_scope_and_disclosure(self):
+        event = SimulationEvent(
+            event_time_utc=NOW,
+            event_type=EventType.RESPONSE_ASSUMPTION_APPLIED,
+            provenance=ProvenanceClass.ASSUMED,
+            payload={"theta_release": 0.5},
+        )
+        valid = SimulationResult(
+            request_id="assumed-3", policy_id="adaptive", policy_version="1",
+            execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
+            claim_scope=ClaimScope.SCENARIO_CONDITIONAL, events=(event,),
+            evaluation_metrics={"simulated_availability_change": 0.1},
+            assumption_disclosure="Conditional on an assumed release response.",
+            response_model_id="release-logit-shift", response_model_version="draft-1",
+        )
+        valid.validate()
+
+        invalid = SimulationResult(
+            request_id="assumed-3", policy_id="adaptive", policy_version="1",
+            execution_mode=ExecutionMode.ASSUMPTION_DRIVEN_COUNTERFACTUAL,
+            claim_scope=ClaimScope.COUNTERFACTUAL_EFFECT, events=(event,),
+            evaluation_metrics={"capacity_released_by_fee": 1},
+            assumption_disclosure="Assumed.", response_model_id="release",
+            response_model_version="1",
+        )
+        with self.assertRaises(ValueError):
+            invalid.validate()
 
     def test_observed_state_rejects_inconsistent_capacity_partition(self):
         invalid = ObservedSystemState(

@@ -1,6 +1,6 @@
 # Common generalized simulator contract
 
-Status: **draft v0.1**. This contract defines inputs, events, policies, outputs
+Status: **draft v0.2**. This contract defines inputs, events, policies, outputs
 and permitted claims before implementation of a simulation engine.
 
 The contract is represented in code by `src/simulation_contract.py`. The fixed
@@ -24,9 +24,9 @@ and adaptive policies are inserted. Both policies must receive the same:
 Only the policy specification may differ. This makes the comparison paired and
 prevents improvements from being caused by different source data.
 
-For the data-grounded MVP, the safest form of the common model is an observed
-timeline replay and policy-evaluation engine. It is not yet a synthetic model
-of individual vehicles.
+The contract distinguishes factual replay, assumption-driven stress testing
+and a future empirically validated counterfactual. These modes must never be
+collapsed into one generic "simulation" result.
 
 ## 2. Execution modes
 
@@ -54,7 +54,29 @@ It cannot answer:
 
 Observed replay has `claim_scope = mechanism_only`.
 
-### 2.2 `validated_counterfactual`
+### 2.2 `assumption_driven_counterfactual`
+
+This is the project stress-testing mode. It starts from the real reconstructed
+baseline and permits a versioned hypothetical price-response mechanism to alter
+the state trajectory. Its response parameters have `assumed`, not `estimated`,
+provenance.
+
+It answers conditional questions such as:
+
+> If the release response has the specified functional form, sensitivity and
+> delay, how do the simulated scarcity metrics differ from the F1 baseline?
+
+It may report simulated state and scarcity differences, robustness regions and
+minimum response thresholds. It may not present those values as observed,
+estimated from Vilnius behaviour or causally predicted. Every result has
+`claim_scope = scenario_conditional` and carries a visible assumption
+disclosure plus response-model identity/version.
+
+The mode requires a deterministic random seed so paired policy runs are
+reproducible. A future experiment runner will additionally use common random
+numbers between matched scenarios.
+
+### 2.3 `validated_counterfactual`
 
 This future mode permits policy decisions to alter the state trajectory. It is
 disabled unless a behavioural-response specification contains:
@@ -74,15 +96,21 @@ Only this mode may have `claim_scope = counterfactual_effect`.
 
 1. Raw OCPI/DATEX observations are never rewritten by a policy run.
 2. Fixed and adaptive policies use an identical input timeline.
-3. Every input carries observed, reconstructed, estimated or policy-defined
-   provenance.
+3. Every input carries observed, reconstructed, estimated, policy-defined,
+   assumed or simulated provenance.
 4. Required derivative statistics must be statistically qualified.
 5. Ineligible snapshots never become evidence of scarcity.
 6. A collection gap never becomes zero demand or continuous occupancy.
 7. `CHARGING` is not automatically continuous energy transfer.
 8. Zero availability is not a physical queue.
 9. Observed replay cannot emit simulated behaviour or released capacity.
-10. All contracts, policies, estimators and structures are versioned.
+10. An assumed parameter is never relabelled as an empirical estimate.
+11. Assumption-driven output is always scenario-conditional, never a causal
+    prediction.
+12. Equipment-failure transitions may not be modified by a price-response
+    assumption unless a separate, defensible mechanism is explicitly approved.
+13. All contracts, policies, response models, estimators and structures are
+    versioned.
 
 ## 4. Structural input
 
@@ -194,6 +222,39 @@ The colleague-proposed queue/post-charge-idle SII is not inserted into this
 contract as a valid data input because its required variables are unavailable.
 It remains a proposal to be reviewed separately.
 
+### 7.1 Response-model input
+
+`AssumptionDrivenResponseSpecification` is deliberately independent of the
+eventual adaptive price formula. It defines how a supplied price difference may
+hypothetically change selected state transitions. It contains:
+
+- model ID and version;
+- explicit functional form;
+- one or more response channels, initially `release` and later `start`;
+- exact affected transitions, for example `charging_to_available`;
+- complete parameter values and a unit for every parameter;
+- response delay;
+- the simulated outcomes the mechanism is allowed to support;
+- mandatory `assumed` provenance.
+
+A proposed initial form is:
+
+```text
+logit(q_release,1)
+    = logit(q_release,0)
+    + theta_release * price_intensity * adaptive_price_delta(t - delay)
+```
+
+This equation is not yet an implemented or approved behavioural model. The
+contract merely provides a safe slot for it. `theta_release` cannot be described
+as estimated until it has an identified evidence source and estimator.
+
+`BehaviouralResponseSpecification` remains reserved for validated
+counterfactual execution. It requires evidence metadata, a validation report,
+supported outcomes and explicit validation for Vilnius. A request must contain
+exactly the response type required by its execution mode; assumed and validated
+responses cannot coexist.
+
 ## 8. Event catalogue
 
 ### Observed/reconstructed events
@@ -211,10 +272,16 @@ timeline in replay mode.
 
 ### Counterfactual events
 
+- `response_assumption_applied`: records the exact assumed mechanism and
+  parameters used at an evaluation point;
+- `simulated_state_transition`: a state transition generated under a response
+  model;
 - `counterfactual_behaviour_change`;
 - `counterfactual_capacity_release`.
 
-These events have simulated provenance and are forbidden in observed replay.
+`response_assumption_applied` has assumed provenance and is legal only in
+assumption-driven mode. State-changing counterfactual events have simulated
+provenance and are forbidden in observed replay.
 
 ## 9. Event ordering
 
@@ -225,8 +292,10 @@ For a single UTC timestamp, the eventual engine must use a deterministic order:
 3. emit observed transition proxies whose upper bound is this timestamp;
 4. evaluate the policy if its interval is due;
 5. emit the policy decision;
-6. in validated counterfactual mode only, evaluate behavioural response;
-7. record outputs.
+6. in assumption-driven mode, record and apply the assumed response model;
+7. in validated counterfactual mode, apply the validated response model;
+8. generate any permitted simulated state transition;
+9. record outputs.
 
 Tie-breaking and missing-snapshot behaviour must be identical for fixed and
 adaptive policies.
@@ -284,7 +353,25 @@ These outputs answer `does the policy mechanism work as specified?`
 - causal revenue attributable to behaviour change;
 - welfare improvement.
 
-### 11.3 Counterfactual-only outputs
+### 11.3 Assumption-driven outputs
+
+Permitted outputs are explicitly simulated or scenario-conditional:
+
+- `simulated_availability_change`;
+- `simulated_zero_availability_share_change`;
+- simulated scarcity-episode count and duration changes;
+- simulated release/start transition changes;
+- improvement frequency across repeated runs;
+- uncertainty intervals across baseline paths and stochastic replications;
+- robustness regions in the declared assumption space;
+- minimum response thresholds under the declared functional form.
+
+Names such as `capacity_released_by_fee`, `users_changing_behaviour`,
+`waiting_time_reduction` and `queue_length_reduction` remain forbidden because
+without qualification they read as causal or observed claims. Each result must
+identify the assumed model and include a human-readable disclosure.
+
+### 11.4 Validated-counterfactual-only outputs
 
 Each causal output must be listed in the validated behavioural-response model's
 `supported_outcomes`. Unsupported outcomes remain forbidden even in
@@ -292,13 +379,15 @@ counterfactual mode.
 
 ## 12. Fixed versus adaptive comparison protocol
 
-One comparison unit consists of two validated requests with:
+One comparison unit consists of matched requests with:
 
 - the same site structure and version;
 - the same ordered observed timeline;
 - the same training and evaluation windows;
 - the same qualified derivative statistics;
 - the same decision interval;
+- the same baseline-generation method and random seed for stochastic runs;
+- the same response model when policies are compared;
 - different policy ID/version and parameters only.
 
 Results are joined by site and evaluation timestamp. Missing or withheld
@@ -308,6 +397,12 @@ Replay comparison reports differences in mechanism outputs. It must state:
 
 > This comparison shows how two pricing rules would have evaluated the same
 > observed history. It does not estimate how users would have responded.
+
+Assumption-driven comparison must state:
+
+> This result is conditional on the declared hypothetical response model and
+> parameters. It is a stress-test scenario, not an observed or validated causal
+> effect.
 
 ## 13. Answering the two project questions
 
@@ -326,7 +421,14 @@ Observed replay can answer the engineering version:
 Observed replay can show a visible difference in **policy decisions**, not a
 visible behavioural or capacity effect.
 
-A claim that availability improved requires either:
+Assumption-driven execution can answer a narrower question:
+
+- under which assumed response mechanisms simulated availability improves;
+- how strong an assumed response must be;
+- whether improvement persists across baseline and stochastic uncertainty.
+
+It cannot answer whether the assumed response is true. A predictive or causal
+claim that availability will improve requires either:
 
 - a validated counterfactual behavioural model;
 - a controlled pilot/intervention;
@@ -341,6 +443,9 @@ Every request/result pair must preserve:
 - structure version;
 - interval/flow/scarcity estimator versions;
 - policy version and complete parameters;
+- execution mode and claim scope;
+- assumed response model, complete parameters, units and disclosure;
+- validated response evidence and report when applicable;
 - timezone and decision interval;
 - qualification thresholds;
 - behavioural-response version when applicable;
@@ -357,4 +462,6 @@ Every request/result pair must preserve:
    baselines or only current qualified snapshots.
 5. Define withheld behaviour and recovery after data gaps.
 6. Approve the exact replay evaluation metrics.
-7. Decide what evidence could unlock counterfactual mode.
+7. Define the first release-response functional form and assumption grid.
+8. Decide what evidence could promote an assumed parameter to an estimate and
+   eventually unlock validated counterfactual mode.
