@@ -2,6 +2,7 @@
 __pycache__/
 *.py[codz]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -226,6 +227,12 @@ data/raw/
 
 # Generated experiment results
 outputs/
+
+# Generated artifacts, except the public project guide
+output/*
+!output/pdf/
+output/pdf/*
+!output/pdf/matemafija_project_guide.pdf
 
 # Ignoring PyCharm
 .idea/

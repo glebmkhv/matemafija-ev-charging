@@ -57,26 +57,25 @@ infer readiness from the tier label alone.
 
 Read-only audit of `data/ev_charging.db` on 2026-10-08:
 
-| Fact | Current value |
+| Fact | Snapshot value |
 | --- | ---: |
-| OCPI locations with complete-snapshot observations | 1,984 |
-| Observation window | 2026-10-06 12:48:39 UTC — 2026-10-07 20:34:02 UTC |
-| Global history span | 1.323 days |
-| Sites ready for descriptive replay | 1,853 |
+| OCPI EVSE-status observations | 1,915,331 |
+| Current OCPI locations | 1,984 |
+| Current OCPI tariffs | 1,701 |
+| Current connector-tariff assignments | 5,886 |
+| Observation window | 2026-10-06 12:48:39 UTC — 2026-10-08 18:06:50 UTC |
+| Global history span | approximately 2.22 days |
 | Sites with at least 7 days of history | 0 |
-| Mean eligible-snapshot share across sites | 85.57% |
-| Current connectors | 5,843 |
-| Connectors with a current tariff assignment | 5,821 |
-| Sites passing the complete F1 tariff gate | 813 |
-| Sites with full assignment but no resolvable price components | 1,164 |
-| Sites with partial connector-tariff assignment | 7 |
-| Sites with a current DATEX station match | 1,980 |
 
-Consequently, the current database supports a substantial descriptive replay
-and factual F1 replay for 813 sites, but **no site yet passes the seven-day
-historical gate**. Therefore no site is currently declared ready for fitting the
-baseline transition model or for assumption-driven counterfactual simulation.
-This is a data-window limitation, not a negative result about adaptive pricing.
+These values are the same high-level snapshot reported in the project guide.
+Because collection continues, row counts and site-level qualification must be
+recomputed before presentation rather than treated as live constants.
+
+Consequently, the current database supports substantial descriptive replay and
+factual tariff inspection, but **no site yet passes the seven-day historical
+gate**. Therefore no site is currently declared ready for fitting the baseline
+transition model or for assumption-driven counterfactual simulation. This is a
+data-window limitation, not a negative result about adaptive pricing.
 
 The collector should continue running. Once the seven-day threshold is crossed,
 the assessment must be rerun because transition counts, interval censoring and

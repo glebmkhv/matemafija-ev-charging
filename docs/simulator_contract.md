@@ -1,6 +1,6 @@
 # Common generalized simulator contract
 
-Status: **draft v0.4**. This contract defines inputs, events, policies, outputs
+Status: **implemented contract v0.4.0**. This contract defines inputs, events, policies, outputs
 and permitted claims before implementation of a simulation engine.
 
 The contract is represented in code by `src/simulation_contract.py`. The fixed
@@ -564,10 +564,14 @@ Every request/result pair must preserve:
 - software revision;
 - deterministic seed if future simulation uses randomness.
 
-## 15. Decisions required before engine implementation
+## 15. Remaining validation decisions
 
-1. Approve the experimental grid for the OSA-v1 adjustment cap.
-2. Approve the exact replay evaluation metrics.
-3. Approve the release-response assumption grid for experiments.
-4. Decide what evidence could promote an assumed parameter to an estimate and
-   eventually unlock validated counterfactual mode.
+The assumption-driven engine, OSA-v1 grid, shared evaluation path and response
+channels are implemented. The remaining decisions concern promotion beyond
+scenario-conditional analysis:
+
+1. Define the bounded city pilot and its pre-registered outcomes.
+2. Specify what Session/CDR and intervention evidence can identify the response
+   parameters for Vilnius.
+3. Define the validation and transferability report required before enabling
+   `validated_counterfactual` mode.
