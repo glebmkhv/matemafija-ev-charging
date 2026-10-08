@@ -101,6 +101,15 @@ Or open the dashboard without starting a collector:
 python -m streamlit run src/dashboard.py
 ```
 
+Open the separate policy stress-testing and competition narrative interface:
+
+```bash
+python -m streamlit run src/policy_dashboard.py
+```
+
+The recommended three-minute demonstration and claim-safe jury narrative are
+documented in [`docs/pitch_narrative.md`](docs/pitch_narrative.md).
+
 The dashboard reads the source-native v2 tables in read-only mode and refreshes
 every 30 seconds. It exposes the current OCPI and DATEX records, historical
 observations, source revisions and raw payload metadata, explicit cross-source
