@@ -96,4 +96,10 @@ For fixed/adaptive comparison both policies receive the same observed session.
 The adaptive change is reported separately from the factual F1 component bill
 before any combined counterfactual amount is calculated.
 
+The integration layer also supports mechanism replay from the real structured
+tariff catalogue when observed session usage is absent. It preserves F1 and
+adds OSA as a separate counterfactual TIME component, but withholds the combined
+monetary total until an observed adjustment duration exists. See
+`docs/policy_integration.md`.
+
 Implementation: `src/fixed_policy.py`. Tests: `tests/test_fixed_policy.py`.

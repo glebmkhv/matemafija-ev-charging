@@ -6,9 +6,10 @@ Status: **approved MVP policy, implemented v1.0.0**.
 unobserved queue length and post-charge idle time with reconstructed OCPI
 capacity evidence. The implementation is `src/adaptive_policy.py`.
 
-OSA-v1 calculates a raw adaptive adjustment. It does not yet compose that
-adjustment with F1, lambda or rollout, and it does not invoke the response
-model. Those connections belong to project step 10.
+OSA-v1 calculates a raw adaptive adjustment. Its component-aware composition
+with F1, lambda, rollout and the release-response driver is implemented
+separately in `src/policy_integration.py` and documented in
+`docs/policy_integration.md`.
 
 ## 1. Inputs
 

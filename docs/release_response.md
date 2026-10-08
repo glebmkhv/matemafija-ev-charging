@@ -63,9 +63,10 @@ this amount*.
 
 ## 4. Driver and delay
 
-The mechanism expects the driver named `effective_policy_adjustment`. The name
-describes the interface, not an approved pricing formula. Step 10 will determine
-how F1, adaptive adjustment, rollout and lambda produce this value.
+The mechanism expects the driver named `effective_policy_adjustment`. It is now
+produced by `src/policy_integration.py` as
+`R_i(t) * lambda * OSA_raw_adjustment`. F1 remains a separate structured tariff
+reference rather than being reduced to a scalar rate.
 
 At time `t`, the implementation selects the latest driver point whose effective
 time is no later than `t - tau`. It uses a piecewise-constant signal:

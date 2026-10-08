@@ -56,6 +56,10 @@ The approved MVP adaptive pricing rule, `Observable Scarcity Adjustment`
 (`OSA-v1`), is defined in
 [`docs/adaptive_policy.md`](docs/adaptive_policy.md).
 
+The component-aware composition of factual F1, OSA-v1, rollout/intensity and
+the release-response driver is documented in
+[`docs/policy_integration.md`](docs/policy_integration.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

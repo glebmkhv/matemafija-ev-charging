@@ -315,8 +315,8 @@ chain and safety invariants are specified in
 
 The sole implemented mechanism is the exponential-hazard release response in
 [`release_response.md`](release_response.md). Its driver interface is fixed,
-but the pricing rule that will produce the driver remains unapproved and belongs
-to the later policy-integration step.
+and the driver is produced by the component-aware F1/OSA/adoption integration in
+[`policy_integration.md`](policy_integration.md).
 
 `BehaviouralResponseSpecification` remains reserved for validated
 counterfactual execution. It requires evidence metadata, a validation report,
@@ -367,6 +367,11 @@ For a single UTC timestamp, the eventual engine must use a deterministic order:
 9. in validated counterfactual mode, apply the validated response model;
 10. generate any permitted simulated state transition;
 11. record outputs.
+
+F1 composition is component-aware: the factual tariff structure is preserved
+and the effective OSA adjustment becomes a separate counterfactual TIME
+component. A combined monetary total is withheld without observed applicable
+duration.
 
 Tie-breaking and missing-snapshot behaviour must be identical for fixed and
 adaptive policies.

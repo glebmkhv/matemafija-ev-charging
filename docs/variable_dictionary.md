@@ -215,6 +215,13 @@ hazard is estimated, sensitivity and delay are assumed, the external driver is
 policy-defined, and adjusted hazard/probability are simulated. It does not
 generate an arrival response or a state transition by itself.
 
+The integration layer defines
+`effective_policy_adjustment = R_i(t) * lambda * OSA_raw_adjustment`. Coverage
+`kappa` selects the treated population but does not scale an already selected
+entity's rate. The effective adjustment is both a separate counterfactual TIME
+tariff component and the policy-defined release-response driver. A combined
+bill remains unavailable without observed adjustment duration.
+
 ## 8. Policy-defined variables
 
 These variables express a rule being evaluated; they are not inferred facts.
