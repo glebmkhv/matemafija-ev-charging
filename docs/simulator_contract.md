@@ -223,19 +223,20 @@ the connector. Matched DATEX pricing is retained as corroborating evidence.
 Its applicability and withholding rules are specified in
 [`fixed_policy.md`](fixed_policy.md).
 
-An adaptive policy must eventually specify:
+The approved MVP adaptive policy is `OSA-v1`, documented in
+[`adaptive_policy.md`](adaptive_policy.md). It specifies:
 
-- activation evidence;
-- signal formula and version;
-- mapping from signal to rate;
-- floor and cap;
-- recalculation interval;
-- behaviour on ineligible observations;
-- hysteresis/cooldown, if any.
+- observable activation evidence;
+- a bounded pressure × persistence signal;
+- mapping from signal to raw EUR/min adjustment;
+- a mandatory adjustment cap;
+- a five-minute decision interval;
+- explicit inactive and withheld behaviour.
 
 The colleague-proposed queue/post-charge-idle SII is not inserted into this
 contract as a valid data input because its required variables are unavailable.
-It remains a proposal to be reviewed separately.
+It is retained as conceptual project history; its grace, nonlinear-pressure and
+adaptive-incentive ideas are carried into OSA-v1 through observable variables.
 
 ### 7.1 Policy adoption input
 
@@ -535,14 +536,8 @@ Every request/result pair must preserve:
 
 ## 15. Decisions required before engine implementation
 
-1. Agree with the mathematical-model author whether observable sustained
-   scarcity replaces queue and post-charge idle in the MVP.
-2. Approve an adaptive signal formula.
-3. Approve fee floor, cap and recalculation interval.
-4. Decide whether adaptive decisions require statistically qualified historical
-   baselines or only current qualified snapshots.
-5. Define withheld behaviour and recovery after data gaps.
-6. Approve the exact replay evaluation metrics.
-7. Approve the release-response assumption grid for experiments.
-8. Decide what evidence could promote an assumed parameter to an estimate and
+1. Approve the experimental grid for the OSA-v1 adjustment cap.
+2. Approve the exact replay evaluation metrics.
+3. Approve the release-response assumption grid for experiments.
+4. Decide what evidence could promote an assumed parameter to an estimate and
    eventually unlock validated counterfactual mode.

@@ -177,7 +177,7 @@ as site, local weekday and local hour.
 | `release_proxy_rate` | estimated | proxy events/hour | Eligible `charging → available` transitions divided by covered time. | This is not exact session completion rate. | Throughput proxy. |
 | `observed_charging_interval_distribution` | estimated | distribution/minutes | Distribution of complete `charging` interval bounds or midpoint estimates. | Censoring treatment, gap filter, power/site strata. | Baseline behaviour and validation. |
 | `status_transition_matrix` | estimated | conditional probability matrix | Counts/proportions of valid adjacent status transitions. | Window, sample sizes and excluded gaps. | Data diagnostics and later model calibration. |
-| `station_scarcity_score` | estimated | dimensionless | A versioned summary derived only from observable scarcity components. No formula is approved yet. | Formula version, components, scaling window and uncertainty. | Candidate replacement for queue-based pressure in adaptive policy. |
+| `osa_scarcity_signal` | policy_defined, derived | ratio `[0,1]` | `normalized_operational_pressure^gamma * persistence_after_grace`. | OSA policy version, parameters, evidence eligibility and reconstructed duration. | Approved OSA-v1 adaptive adjustment input. |
 
 No derivative statistic should be materialized until its minimum history and
 coverage thresholds are defined. The current short collection period is enough
@@ -228,9 +228,9 @@ These variables express a rule being evaluated; they are not inferred facts.
 | `demand_sensitivity_alpha` | policy_defined | dimensionless | 0.4 | Prototype scaling parameter. Current queue-based interpretation is not approved for the data-grounded MVP. |
 | `monetary_scale_beta` | policy_defined | EUR/min per index unit | 0.05 | Converts an index into a rate increment. Unit depends on the final approved formula. |
 | `curvature_gamma` | policy_defined | dimensionless | 1.2 | Curvature of the fee response. Requires sensitivity analysis. |
-| `fee_rate_cap` | policy_defined | EUR/min | not defined | A cap should be considered before any realistic policy evaluation. |
-| `policy_recalculation_interval` | policy_defined | minutes | not defined | Frequency at which an adaptive rate may change. It must not be faster than the information supporting it. |
-| `scarcity_activation_rule` | policy_defined | rule | not defined | Candidate: activate only after a sustained, quality-qualified zero-availability episode. Requires colleague agreement. |
+| `fee_rate_cap` | policy_defined | EUR/min | `0.05` in OSA-v1 | Maximum raw adaptive adjustment; varied in later sensitivity analysis. |
+| `policy_recalculation_interval` | policy_defined | minutes | `5` in OSA-v1 | Matches the expected observation cadence. |
+| `scarcity_activation_rule` | policy_defined | rule | OSA-v1 | Eligible operational scarcity above `0.5`, at least one charging EVSE, acceptable equipment loss, 15-minute grace and 30-minute ramp. |
 
 ## 9. Currently unavailable concepts
 
