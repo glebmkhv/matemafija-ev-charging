@@ -455,6 +455,12 @@ Permitted outputs are explicitly simulated or scenario-conditional:
 - robustness regions in the declared assumption space;
 - minimum response thresholds under the declared functional form.
 
+The implemented release-only evaluator currently supports matched availability,
+operational-scarcity and zero-availability-share changes. Because its
+projections are independent
+one-step outcomes, simulated episode count and duration are explicitly
+withheld; see [`simulation_evaluation.md`](simulation_evaluation.md).
+
 Names such as `capacity_released_by_fee`, `users_changing_behaviour`,
 `waiting_time_reduction` and `queue_length_reduction` remain forbidden because
 without qualification they read as causal or observed claims. Each result must

@@ -137,3 +137,8 @@ causal intervention.
 - DATEX: not combined at this stage.
 - Queue variables: absent.
 - Policy thresholds and adaptive fee: absent.
+
+The same snapshot definitions are reused for paired conditional simulation in
+[`simulation_evaluation.md`](simulation_evaluation.md). This does not change
+the factual meaning of this module: projected outputs are labelled `simulated`,
+and episode metrics remain disabled until a stateful trajectory exists.

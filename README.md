@@ -64,6 +64,10 @@ The reproducible scenario grid, paired common-random-number Monte Carlo and
 release-only conditional projection semantics are documented in
 [`docs/simulation_grid.md`](docs/simulation_grid.md).
 
+The shared fixed/adaptive scarcity evaluation path and its snapshot-only claim
+boundary are documented in
+[`docs/simulation_evaluation.md`](docs/simulation_evaluation.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

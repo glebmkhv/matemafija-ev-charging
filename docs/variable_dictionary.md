@@ -245,6 +245,11 @@ is a reproducibility control, not a system variable. Paired projected release
 counts and available/charging counts have `simulated` provenance and are
 defined in [`simulation_grid.md`](simulation_grid.md).
 
+Paired scarcity changes use the explicit `adaptive - fixed` sign convention.
+They retain `simulated` provenance and `scenario_conditional` claim scope; the
+canonical definitions and current episode-metric exclusion are documented in
+[`simulation_evaluation.md`](simulation_evaluation.md).
+
 ## 9. Currently unavailable concepts
 
 | Concept | Status | Why it is unavailable | Permitted next action |

@@ -99,10 +99,11 @@ All projected outcomes have `simulated` provenance. `theta_release` and delay
 remain `assumed`; `lambda`, rollout and tariff adjustment remain
 `policy_defined`; the baseline transition estimate remains `estimated`.
 
-Release totals are diagnostic outputs, not the final policy score. Step 12
-must evaluate both arms with the same existing scarcity definitions. Step 13
-will aggregate those paired metric differences into uncertainty intervals,
-robustness regions and a minimum response threshold.
+Release totals are diagnostic outputs, not the final policy score. Both arms
+are now evaluated with the same snapshot-level scarcity definitions in
+[`simulation_evaluation.md`](simulation_evaluation.md). Step 13 will aggregate
+those paired metric differences into uncertainty intervals, robustness regions
+and a minimum response threshold.
 
 ## 6. Claim boundary
 
