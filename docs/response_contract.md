@@ -1,13 +1,13 @@
 # Policy-independent response contract
 
-Status: **contract v1.0; release mechanism implemented separately**.
+Status: **contract v1.0; release and charging-start mechanisms implemented**.
 
 The response contract defines the boundary between a policy decision and a
 hypothetical change in one state-transition channel. Its executable types are
 in `src/simulation_contract.py`; the common simulator contract is `0.4.0`.
 
-This contract does not choose an adaptive pricing formula. Its first concrete
-implementation is documented in `docs/release_response.md`.
+Concrete implementations are documented in `docs/release_response.md` and
+`docs/arrival_response.md`.
 
 ## 1. Separation of responsibilities
 
@@ -117,15 +117,15 @@ The contract enforces:
 7. response computation is deterministic and cannot mutate state;
 8. allowed outputs are explicit and versioned.
 
-## 7. Release implementation
+## 7. Implemented channels
 
-Step 8 instantiates this generic boundary for one channel only:
+The generic boundary is instantiated for two observable proxy channels:
 
 ```text
 charging -> available  (`release_proxy`)
+available -> charging  (`charging_start_proxy`)
 ```
 
-It uses an exponential hazard shift, an assumed non-negative sensitivity and an
-explicit delayed driver. Identity, monotonicity, probability bounds and delay
-selection are tested. Arrival response, spatial redistribution and the adaptive
-price formula remain absent.
+Both use exponential hazard shifts, assumed non-negative sensitivities and an
+explicit delayed driver. A positive adjustment increases release hazard and
+decreases accepted-start hazard. Spatial redistribution remains absent.

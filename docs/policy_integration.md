@@ -96,7 +96,9 @@ OSA signal and raw adjustment         policy_defined
 lambda, kappa and R_i(t)               policy_defined
 effective_policy_adjustment            policy_defined
 theta_release and delay                assumed
+theta_arrival                          assumed
 adjusted release hazard/probability    simulated
+adjusted start hazard/probability      simulated
 ```
 
 The integration test verifies the complete deterministic chain through the
@@ -107,5 +109,5 @@ release-response result. It does not yet draw state transitions.
 This layer itself does not draw stochastic transitions. The downstream paired
 Monte Carlo runner is now implemented in
 [`simulation_grid.md`](simulation_grid.md). Scarcity metric comparison,
-robustness regions, arrival response and spatial redistribution remain later
-project steps.
+spatial redistribution remains a later project step. Release and accepted-start
+responses are drawn by the downstream paired simulator.

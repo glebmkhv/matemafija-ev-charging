@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -150,6 +151,38 @@ class SimulationGridTest(unittest.TestCase):
             entity_id="evse-1",
         )
         self.assertEqual(result.runs[0].eligible_point_count, 4)
+
+    def test_arrival_response_reduces_accepted_start_proxy(self):
+        available_trajectory = trajectory()
+        available_trajectory = replace(
+            available_trajectory,
+            points=tuple(replace(
+                point,
+                source_state=replace(
+                    point.source_state,
+                    available_evse_count=4,
+                    charging_evse_count=0,
+                    availability_ratio=1,
+                    occupancy_proxy=0,
+                    zero_availability_evidence=False,
+                ),
+            ) for point in available_trajectory.points),
+        )
+        grid = SimulationGridSpecification(
+            price_intensity_values=(1,), theta_release_values=(0,),
+            response_delay_minutes_values=(0,), replications=3, random_seed=7,
+            theta_arrival_values=(20,),
+        )
+        result = run_paired_simulation_grid(
+            grid, available_trajectory, model(), decisions(), tariff(), adoption(),
+            connector_key="connector-1", entity_id="evse-1",
+        )
+        for run in result.runs:
+            self.assertLessEqual(run.adaptive_start_count, run.fixed_start_count)
+            self.assertEqual(
+                run.deferred_or_displaced_start_proxy_count,
+                run.fixed_start_count-run.adaptive_start_count,
+            )
 
 
 if __name__ == "__main__":

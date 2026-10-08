@@ -94,6 +94,9 @@ class PairedScarcityEvaluation:
     zero_availability_snapshot_share_change: float | None
     mean_availability_ratio_change: float | None
     mean_operational_scarcity_ratio_change: float | None
+    fixed_start_proxy_count: int
+    adaptive_start_proxy_count: int
+    deferred_or_displaced_start_proxy_count: int
     episode_metrics_applicable: bool = False
     claim_scope: ClaimScope = ClaimScope.SCENARIO_CONDITIONAL
     provenance: ProvenanceClass = ProvenanceClass.SIMULATED
@@ -127,6 +130,13 @@ class PairedScarcityEvaluation:
         )
         if actual != expected:
             raise ValueError("Paired scarcity changes are inconsistent")
+        if (min(
+            self.fixed_start_proxy_count,
+            self.adaptive_start_proxy_count,
+            self.deferred_or_displaced_start_proxy_count,
+        ) < 0 or self.fixed_start_proxy_count - self.adaptive_start_proxy_count
+                != self.deferred_or_displaced_start_proxy_count):
+            raise ValueError("Charging-start proxy trade-off is inconsistent")
         if self.episode_metrics_applicable:
             raise ValueError("Episode metrics are invalid for one-step projections")
         if self.claim_scope is not ClaimScope.SCENARIO_CONDITIONAL:
@@ -224,6 +234,11 @@ def evaluate_paired_run_scarcity(
         mean_operational_scarcity_ratio_change=_difference(
             adaptive.mean_operational_scarcity_ratio,
             fixed.mean_operational_scarcity_ratio,
+        ),
+        fixed_start_proxy_count=run.fixed_start_count,
+        adaptive_start_proxy_count=run.adaptive_start_count,
+        deferred_or_displaced_start_proxy_count=(
+            run.deferred_or_displaced_start_proxy_count
         ),
     )
     result.validate()

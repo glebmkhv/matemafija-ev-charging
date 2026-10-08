@@ -209,17 +209,19 @@ quantities are `simulated`. A withheld driver has no numeric value and is never
 reinterpreted as zero. The formal contract is documented in
 `docs/response_contract.md`.
 
-The release-only implementation uses
+The release channel uses
 `h_release,1 = h_release,0 * exp(theta_release * delayed_driver)`. The baseline
 hazard is estimated, sensitivity and delay are assumed, the external driver is
-policy-defined, and adjusted hazard/probability are simulated. It does not
-generate an arrival response or a state transition by itself.
+policy-defined, and adjusted hazard/probability are simulated. The accepted-start
+channel analogously uses
+`h_start,1 = h_start,0 * exp(-theta_arrival * delayed_driver)`. Neither response
+function draws a state transition by itself.
 
 The integration layer defines
 `effective_policy_adjustment = R_i(t) * lambda * OSA_raw_adjustment`. Coverage
 `kappa` selects the treated population but does not scale an already selected
 entity's rate. The effective adjustment is both a separate counterfactual TIME
-tariff component and the policy-defined release-response driver. A combined
+tariff component and the policy-defined response driver. A combined
 bill remains unavailable without observed adjustment duration.
 
 ## 8. Policy-defined variables
@@ -239,11 +241,16 @@ These variables express a rule being evaluated; they are not inferred facts.
 | `policy_recalculation_interval` | policy_defined | minutes | `5` in OSA-v1 | Matches the expected observation cadence. |
 | `scarcity_activation_rule` | policy_defined | rule | OSA-v1 | Eligible operational scarcity above `0.5`, at least one charging EVSE, acceptable equipment loss, 15-minute grace and 30-minute ramp. |
 
-The scenario runner varies `price_intensity_lambda`, assumed
-`theta_release` and assumed response delay as separate axes. Replication seed
+The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
+assumed `theta_arrival` and assumed response delay as separate axes. Replication seed
 is a reproducibility control, not a system variable. Paired projected release
 counts and available/charging counts have `simulated` provenance and are
 defined in [`simulation_grid.md`](simulation_grid.md).
+
+`deferred_or_displaced_start_proxy_count` is the simulated fixed-minus-adaptive
+difference in accepted `available -> charging` transitions. It is not observed
+lost demand and remains spatially unassigned; see
+[`arrival_response.md`](arrival_response.md).
 
 Paired scarcity changes use the explicit `adaptive - fixed` sign convention.
 They retain `simulated` provenance and `scenario_conditional` claim scope; the

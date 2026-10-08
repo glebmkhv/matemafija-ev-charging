@@ -73,6 +73,7 @@ class ScenarioRobustnessSummary:
     median_paired_change: float | None
     paired_change_interval_lower: float | None
     paired_change_interval_upper: float | None
+    mean_deferred_or_displaced_start_proxy_count: float
     empirically_successful: bool
     robust_success: bool
 
@@ -84,6 +85,9 @@ class ScenarioRobustnessSummary:
             raise ValueError("Scenario replication counts are inconsistent")
         if not 0 <= self.improvement_count <= self.valid_replication_count:
             raise ValueError("Improvement count is inconsistent")
+        if (not math.isfinite(self.mean_deferred_or_displaced_start_proxy_count)
+                or self.mean_deferred_or_displaced_start_proxy_count < 0):
+            raise ValueError("Mean displaced start proxy must be non-negative")
         numeric = (
             self.improvement_probability,
             self.improvement_probability_ci_lower,
@@ -138,6 +142,7 @@ class ScenarioRobustnessSummary:
 class MinimumResponseThreshold:
     price_intensity_lambda: float
     response_delay_minutes: int
+    theta_arrival: float
     minimum_tested_theta_release: float | None
     identified_on_grid: bool
     supporting_scenario_id: str | None
@@ -149,6 +154,8 @@ class MinimumResponseThreshold:
                 or not isinstance(self.response_delay_minutes, int)
                 or self.response_delay_minutes < 0):
             raise ValueError("Threshold coordinates are invalid")
+        if not math.isfinite(self.theta_arrival) or self.theta_arrival < 0:
+            raise ValueError("Threshold arrival sensitivity is invalid")
         identified = self.minimum_tested_theta_release is not None
         if self.identified_on_grid != identified:
             raise ValueError("Threshold identification flag is inconsistent")
@@ -207,11 +214,16 @@ class RobustnessRegionResult:
             (
                 item.scenario.price_intensity_lambda,
                 item.scenario.response_delay_minutes,
+                item.scenario.theta_arrival,
             )
             for item in self.scenario_summaries
         }
         actual_coordinates = {
-            (item.price_intensity_lambda, item.response_delay_minutes)
+            (
+                item.price_intensity_lambda,
+                item.response_delay_minutes,
+                item.theta_arrival,
+            )
             for item in self.minimum_response_thresholds
         }
         if (actual_coordinates != expected_coordinates
@@ -225,6 +237,7 @@ class RobustnessRegionResult:
                 == threshold.price_intensity_lambda
                 and item.scenario.response_delay_minutes
                 == threshold.response_delay_minutes
+                and item.scenario.theta_arrival == threshold.theta_arrival
             ]
             expected = min(
                 candidates, key=lambda item: item.scenario.theta_release,
@@ -256,6 +269,7 @@ def calculate_robustness_region(
     expected_evaluations = (
         len(grid_evaluation.grid.price_intensity_values)
         * len(grid_evaluation.grid.theta_release_values)
+        * len(grid_evaluation.grid.theta_arrival_values)
         * len(grid_evaluation.grid.response_delay_minutes_values)
         * grid_evaluation.grid.replications
     )
@@ -269,6 +283,7 @@ def calculate_robustness_region(
     expected_scenarios = (
         len(grid_evaluation.grid.price_intensity_values)
         * len(grid_evaluation.grid.theta_release_values)
+        * len(grid_evaluation.grid.theta_arrival_values)
         * len(grid_evaluation.grid.response_delay_minutes_values)
     )
     if len(grouped) != expected_scenarios:
@@ -280,6 +295,7 @@ def calculate_robustness_region(
         key=lambda item: (
             item.price_intensity_lambda,
             item.response_delay_minutes,
+            item.theta_arrival,
             item.theta_release,
         ),
     ):
@@ -324,6 +340,9 @@ def calculate_robustness_region(
             paired_change_interval_upper=(
                 _quantile(valid, 1 - interval_alpha) if valid else None
             ),
+            mean_deferred_or_displaced_start_proxy_count=fmean(
+                item.deferred_or_displaced_start_proxy_count for item in rows
+            ),
             empirically_successful=(
                 probability is not None
                 and probability >= specification.improvement_probability_threshold
@@ -340,27 +359,30 @@ def calculate_robustness_region(
     thresholds = []
     for intensity in sorted(grid_evaluation.grid.price_intensity_values):
         for delay in sorted(grid_evaluation.grid.response_delay_minutes_values):
-            candidates = [
-                item for item in summaries
-                if item.scenario.price_intensity_lambda == intensity
-                and item.scenario.response_delay_minutes == delay
-                and item.robust_success
-            ]
-            supporting = min(
-                candidates, key=lambda item: item.scenario.theta_release,
-                default=None,
-            )
-            thresholds.append(MinimumResponseThreshold(
-                price_intensity_lambda=intensity,
-                response_delay_minutes=delay,
-                minimum_tested_theta_release=(
-                    supporting.scenario.theta_release if supporting else None
-                ),
-                identified_on_grid=supporting is not None,
-                supporting_scenario_id=(
-                    supporting.scenario.scenario_id if supporting else None
-                ),
-            ))
+            for theta_arrival in sorted(grid_evaluation.grid.theta_arrival_values):
+                candidates = [
+                    item for item in summaries
+                    if item.scenario.price_intensity_lambda == intensity
+                    and item.scenario.response_delay_minutes == delay
+                    and item.scenario.theta_arrival == theta_arrival
+                    and item.robust_success
+                ]
+                supporting = min(
+                    candidates, key=lambda item: item.scenario.theta_release,
+                    default=None,
+                )
+                thresholds.append(MinimumResponseThreshold(
+                    price_intensity_lambda=intensity,
+                    response_delay_minutes=delay,
+                    theta_arrival=theta_arrival,
+                    minimum_tested_theta_release=(
+                        supporting.scenario.theta_release if supporting else None
+                    ),
+                    identified_on_grid=supporting is not None,
+                    supporting_scenario_id=(
+                        supporting.scenario.scenario_id if supporting else None
+                    ),
+                ))
 
     result = RobustnessRegionResult(
         specification=specification,

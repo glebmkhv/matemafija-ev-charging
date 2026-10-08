@@ -2,7 +2,7 @@
 
 Status: **implemented assumption-driven mechanism v1.0.0**.
 
-The release response is the first and currently only implemented behavioural
+The release response is the first implemented behavioural
 response channel. The implementation is in `src/release_response.py` and
 instantiates the policy-independent boundary defined in
 `docs/response_contract.md`.
@@ -99,7 +99,7 @@ does not invent releases where the fitted baseline contains no release process.
 
 ## 7. Explicit exclusions
 
-This implementation does not include an adaptive price formula, F1/adaptive
-composition, application of `lambda`, `kappa` or `R_i(t)`, arrival response,
-spatial redistribution, queue or idle inference, a stochastic state-transition
-draw, or a claim that the assumed response is true in Vilnius.
+This function itself does not calculate policy/adoption or draw a transition.
+The separate accepted-start proxy is documented in `arrival_response.md`;
+spatial redistribution, queue/idle inference and claims that the assumed
+response is true in Vilnius remain excluded.

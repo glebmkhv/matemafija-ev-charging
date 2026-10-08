@@ -26,13 +26,14 @@ merely directional improvement.
 
 ## 2. Scenario-level uncertainty
 
-For every `(lambda, theta_release, delay)` cell the implementation reports:
+For every `(lambda, theta_release, theta_arrival, delay)` cell the implementation reports:
 
 - total, valid and missing replication counts;
 - improvement count and empirical probability;
 - Wilson confidence interval for the improvement probability;
 - mean and median paired metric change;
 - central empirical change interval at the selected confidence level.
+- mean deferred-or-displaced accepted-start proxy count.
 
 Missing metric values are excluded from the denominator and remain visible in
 `missing_replication_count`. A scenario without valid replications has no
@@ -70,8 +71,9 @@ region is the explicit list of scenario IDs satisfying the stronger rule.
 
 ## 4. Minimum response threshold
 
-For each tested `(lambda, delay)` pair, the implementation selects the smallest
-tested `theta_release` whose scenario is robust. The output is named:
+For each tested `(lambda, theta_arrival, delay)` combination, the implementation
+selects the smallest tested `theta_release` whose scenario is robust. The
+output is named:
 
 ```text
 minimum_tested_theta_release

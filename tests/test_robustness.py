@@ -48,6 +48,9 @@ def evaluation(scenario, replication, *, improved):
             adaptive.mean_operational_scarcity_ratio
             - fixed.mean_operational_scarcity_ratio
         ),
+        fixed_start_proxy_count=5,
+        adaptive_start_proxy_count=4 if improved else 5,
+        deferred_or_displaced_start_proxy_count=1 if improved else 0,
         claim_scope=ClaimScope.SCENARIO_CONDITIONAL,
         provenance=ProvenanceClass.SIMULATED,
     )

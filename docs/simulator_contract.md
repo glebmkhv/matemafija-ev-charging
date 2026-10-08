@@ -320,8 +320,8 @@ The sole implemented mechanism is the exponential-hazard release response in
 and the driver is produced by the component-aware F1/OSA/adoption integration in
 [`policy_integration.md`](policy_integration.md).
 
-The first stochastic consumer of this contract is the paired release-only
-runner in [`simulation_grid.md`](simulation_grid.md). It projects each baseline
+The stochastic consumer is the paired release/accepted-start runner in
+[`simulation_grid.md`](simulation_grid.md). It projects each baseline
 snapshot independently and conserves operational capacity. It intentionally
 does not feed projected states forward before an arrival mechanism exists.
 
@@ -455,7 +455,7 @@ Permitted outputs are explicitly simulated or scenario-conditional:
 - robustness regions in the declared assumption space;
 - minimum response thresholds under the declared functional form.
 
-The implemented release-only evaluator currently supports matched availability,
+The implemented paired evaluator currently supports matched availability,
 operational-scarcity and zero-availability-share changes. Because its
 projections are independent
 one-step outcomes, simulated episode count and duration are explicitly

@@ -52,6 +52,10 @@ The first assumption-driven mechanism, limited to the observable
 `charging -> available` release proxy, is specified in
 [`docs/release_response.md`](docs/release_response.md).
 
+The accepted-use `available -> charging` response proxy and its mandatory
+displaced-demand guardrail are specified in
+[`docs/arrival_response.md`](docs/arrival_response.md).
+
 The approved MVP adaptive pricing rule, `Observable Scarcity Adjustment`
 (`OSA-v1`), is defined in
 [`docs/adaptive_policy.md`](docs/adaptive_policy.md).
@@ -60,8 +64,8 @@ The component-aware composition of factual F1, OSA-v1, rollout/intensity and
 the release-response driver is documented in
 [`docs/policy_integration.md`](docs/policy_integration.md).
 
-The reproducible scenario grid, paired common-random-number Monte Carlo and
-release-only conditional projection semantics are documented in
+The reproducible release/arrival scenario grid, paired common-random-number
+Monte Carlo and conditional projection semantics are documented in
 [`docs/simulation_grid.md`](docs/simulation_grid.md).
 
 The shared fixed/adaptive scarcity evaluation path and its snapshot-only claim

@@ -64,9 +64,10 @@ than becoming zero.
 
 ## 4. Why episode metrics are withheld
 
-The release-only runner makes independent one-step projections from each
-baseline snapshot. It does not feed one projected state into the next timestamp
-because the arrival-response channel has not yet been implemented.
+The release/accepted-start runner makes independent one-step projections from each
+baseline snapshot. It does not feed one projected state into the next timestamp;
+arrival response is present, but temporal carry-over and spatial allocation are
+not.
 
 Consequently, adjacent projected zero-availability points are not yet a
 stateful simulated episode. Episode count and duration would overstate the
@@ -100,3 +101,8 @@ Not permitted:
 The paired per-replication changes are aggregated into uncertainty intervals,
 robustness regions and minimum tested response thresholds in
 [`robustness.md`](robustness.md) without changing these definitions.
+
+Every evaluation also reports fixed/adaptive accepted-start proxy counts and
+their `deferred_or_displaced_start_proxy_count`. This trade-off must accompany
+scarcity improvement so reduced accepted use is not presented as pure system
+efficiency.

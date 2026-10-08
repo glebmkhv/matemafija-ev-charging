@@ -1,4 +1,4 @@
-"""Paired Monte Carlo grid for the release-only assumption-driven MVP."""
+"""Paired Monte Carlo grid for release and charging-start responses."""
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
@@ -8,6 +8,7 @@ import random
 
 try:
     from .adaptive_policy import OsaDecision
+    from .arrival_response import apply_arrival_response, arrival_response_specification
     from .fixed_policy import ObservedTariff
     from .policy_integration import CompositionStatus, compose_adaptive_tariff
     from .release_response import apply_release_response, release_response_specification
@@ -16,6 +17,7 @@ try:
     from .transition_model import SiteTransitionModel
 except ImportError:  # pragma: no cover
     from adaptive_policy import OsaDecision
+    from arrival_response import apply_arrival_response, arrival_response_specification
     from fixed_policy import ObservedTariff
     from policy_integration import CompositionStatus, compose_adaptive_tariff
     from release_response import apply_release_response, release_response_specification
@@ -24,7 +26,7 @@ except ImportError:  # pragma: no cover
     from transition_model import SiteTransitionModel
 
 
-SIMULATION_GRID_VERSION = "1.0.0"
+SIMULATION_GRID_VERSION = "2.0.0"
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,7 @@ class SimulationGridSpecification:
     response_delay_minutes_values: tuple[int, ...]
     replications: int
     random_seed: int
+    theta_arrival_values: tuple[float, ...] = (0.0,)
 
     def validate(self):
         if not self.price_intensity_values or any(
@@ -51,6 +54,11 @@ class SimulationGridSpecification:
             for value in self.response_delay_minutes_values
         ):
             raise ValueError("Grid delays must be non-empty and non-negative")
+        if not self.theta_arrival_values or any(
+            isinstance(value, bool) or not math.isfinite(value) or value < 0
+            for value in self.theta_arrival_values
+        ):
+            raise ValueError("Grid arrival sensitivities must be non-empty and non-negative")
         if (isinstance(self.replications, bool)
                 or not isinstance(self.replications, int)
                 or isinstance(self.random_seed, bool)
@@ -61,6 +69,7 @@ class SimulationGridSpecification:
             self.price_intensity_values,
             self.theta_release_values,
             self.response_delay_minutes_values,
+            self.theta_arrival_values,
         ):
             if len(values) != len(set(values)):
                 raise ValueError("Simulation grid values must be unique")
@@ -72,6 +81,7 @@ class SimulationScenario:
     price_intensity_lambda: float
     theta_release: float
     response_delay_minutes: int
+    theta_arrival: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -81,8 +91,12 @@ class PairedProjectionPoint:
     source_charging_count: int
     baseline_release_probability: float | None
     adaptive_release_probability: float | None
+    baseline_start_probability: float | None
+    adaptive_start_probability: float | None
     fixed_release_count: int | None
     adaptive_release_count: int | None
+    fixed_start_count: int | None
+    adaptive_start_count: int | None
     fixed_projected_available_count: int | None
     fixed_projected_charging_count: int | None
     adaptive_projected_available_count: int | None
@@ -101,11 +115,14 @@ class PairedProjectionPoint:
             probabilities = (
                 self.baseline_release_probability,
                 self.adaptive_release_probability,
+                self.baseline_start_probability,
+                self.adaptive_start_probability,
             )
             if any(value is None or not 0 <= value <= 1 for value in probabilities):
                 raise ValueError("Eligible projection requires bounded probabilities")
             counts = (
                 self.fixed_release_count, self.adaptive_release_count,
+                self.fixed_start_count, self.adaptive_start_count,
                 self.fixed_projected_available_count,
                 self.fixed_projected_charging_count,
                 self.adaptive_projected_available_count,
@@ -113,6 +130,14 @@ class PairedProjectionPoint:
             )
             if any(value is None or value < 0 for value in counts):
                 raise ValueError("Eligible projection requires non-negative counts")
+            if (self.fixed_release_count > self.source_charging_count
+                    or self.adaptive_release_count > self.source_charging_count
+                    or self.fixed_start_count > self.source_available_count
+                    or self.adaptive_start_count > self.source_available_count):
+                raise ValueError("Transition count exceeds its source population")
+            if (self.adaptive_release_count < self.fixed_release_count
+                    or self.adaptive_start_count > self.fixed_start_count):
+                raise ValueError("Paired transitions violate response monotonicity")
             if self.fixed_projected_available_count + self.fixed_projected_charging_count != (
                 self.source_available_count + self.source_charging_count
             ):
@@ -124,8 +149,12 @@ class PairedProjectionPoint:
         elif any(value is not None for value in (
             self.baseline_release_probability,
             self.adaptive_release_probability,
+            self.baseline_start_probability,
+            self.adaptive_start_probability,
             self.fixed_release_count,
             self.adaptive_release_count,
+            self.fixed_start_count,
+            self.adaptive_start_count,
             self.fixed_projected_available_count,
             self.fixed_projected_charging_count,
             self.adaptive_projected_available_count,
@@ -148,6 +177,9 @@ class PairedSimulationRun:
     fixed_release_count: int
     adaptive_release_count: int
     additional_release_count: int
+    fixed_start_count: int
+    adaptive_start_count: int
+    deferred_or_displaced_start_proxy_count: int
     common_random_numbers: bool = True
 
     def validate(self):
@@ -166,6 +198,15 @@ class PairedSimulationRun:
                 or adaptive != self.adaptive_release_count
                 or adaptive - fixed != self.additional_release_count):
             raise ValueError("Paired release totals are inconsistent")
+        fixed_starts = sum(point.fixed_start_count for point in eligible)
+        adaptive_starts = sum(point.adaptive_start_count for point in eligible)
+        if (fixed_starts != self.fixed_start_count
+                or adaptive_starts != self.adaptive_start_count
+                or fixed_starts - adaptive_starts
+                != self.deferred_or_displaced_start_proxy_count):
+            raise ValueError("Paired charging-start totals are inconsistent")
+        if self.additional_release_count < 0 or self.deferred_or_displaced_start_proxy_count < 0:
+            raise ValueError("Adaptive response differences cannot be negative")
         if not self.common_random_numbers:
             raise ValueError("Paired MVP runs require common random numbers")
 
@@ -184,6 +225,7 @@ class SimulationGridResult:
         expected = (
             len(self.grid.price_intensity_values)
             * len(self.grid.theta_release_values)
+            * len(self.grid.theta_arrival_values)
             * len(self.grid.response_delay_minutes_values)
             * self.grid.replications
         )
@@ -220,13 +262,18 @@ def run_paired_simulation_grid(
     scenarios = []
     for intensity in grid.price_intensity_values:
         for theta in grid.theta_release_values:
-            for delay in grid.response_delay_minutes_values:
-                scenarios.append(SimulationScenario(
-                    scenario_id=f"lambda={intensity}|theta_r={theta}|tau={delay}",
-                    price_intensity_lambda=intensity,
-                    theta_release=theta,
-                    response_delay_minutes=delay,
-                ))
+            for theta_arrival in grid.theta_arrival_values:
+                for delay in grid.response_delay_minutes_values:
+                    scenarios.append(SimulationScenario(
+                        scenario_id=(
+                            f"lambda={intensity}|theta_r={theta}"
+                            f"|theta_a={theta_arrival}|tau={delay}"
+                        ),
+                        price_intensity_lambda=intensity,
+                        theta_release=theta,
+                        response_delay_minutes=delay,
+                        theta_arrival=theta_arrival,
+                    ))
 
     runs = []
     for scenario in scenarios:
@@ -256,6 +303,10 @@ def run_paired_simulation_grid(
             scenario.theta_release,
             delay_minutes=scenario.response_delay_minutes,
         )
+        arrival_specification = arrival_response_specification(
+            scenario.theta_arrival,
+            delay_minutes=scenario.response_delay_minutes,
+        )
         for replication_index in range(grid.replications):
             replication_seed = grid.random_seed + replication_index
             rng = random.Random(replication_seed)
@@ -264,15 +315,23 @@ def run_paired_simulation_grid(
                 source = trajectory_point.source_state
                 # Consume the same point-level innovations in every scenario,
                 # including when this scenario later withholds the point.
-                uniforms = [rng.random() for _ in range(source.charging_evse_count)]
+                release_uniforms = [
+                    rng.random() for _ in range(source.charging_evse_count)
+                ]
+                start_uniforms = [
+                    rng.random() for _ in range(source.available_evse_count)
+                ]
                 if composition.status is CompositionStatus.WITHHELD:
                     points.append(_withheld_point(
                         trajectory_point.trajectory_time_utc, source,
                         composition.reason_code,
                     ))
                     continue
-                baseline = transition_model.estimate_for(
+                release_baseline = transition_model.estimate_for(
                     "release_proxy", trajectory_point.trajectory_time_utc
+                )
+                start_baseline = transition_model.estimate_for(
+                    "charging_start_proxy", trajectory_point.trajectory_time_utc
                 )
                 cutoff = trajectory_point.trajectory_time_utc - timedelta(
                     minutes=scenario.response_delay_minutes
@@ -294,10 +353,17 @@ def run_paired_simulation_grid(
                     ))
                     continue
                 try:
-                    response = apply_release_response(
-                        baseline,
+                    release_response = apply_release_response(
+                        release_baseline,
                         driver_history,
                         response_specification,
+                        entity_id=entity_id,
+                        evaluation_time_utc=trajectory_point.trajectory_time_utc,
+                    )
+                    arrival_response = apply_arrival_response(
+                        start_baseline,
+                        driver_history,
+                        arrival_specification,
                         entity_id=entity_id,
                         evaluation_time_utc=trajectory_point.trajectory_time_utc,
                     )
@@ -311,30 +377,54 @@ def run_paired_simulation_grid(
                     continue
 
                 fixed_releases = sum(
-                    value < response.baseline_release_probability for value in uniforms
+                    value < release_response.baseline_release_probability
+                    for value in release_uniforms
                 )
                 adaptive_releases = sum(
-                    value < response.adjusted_release_probability for value in uniforms
+                    value < release_response.adjusted_release_probability
+                    for value in release_uniforms
+                )
+                fixed_starts = sum(
+                    value < arrival_response.baseline_start_probability
+                    for value in start_uniforms
+                )
+                adaptive_starts = sum(
+                    value < arrival_response.adjusted_start_probability
+                    for value in start_uniforms
                 )
                 point = PairedProjectionPoint(
                     evaluation_time_utc=trajectory_point.trajectory_time_utc,
                     source_available_count=source.available_evse_count,
                     source_charging_count=source.charging_evse_count,
-                    baseline_release_probability=response.baseline_release_probability,
-                    adaptive_release_probability=response.adjusted_release_probability,
+                    baseline_release_probability=(
+                        release_response.baseline_release_probability
+                    ),
+                    adaptive_release_probability=(
+                        release_response.adjusted_release_probability
+                    ),
+                    baseline_start_probability=(
+                        arrival_response.baseline_start_probability
+                    ),
+                    adaptive_start_probability=(
+                        arrival_response.adjusted_start_probability
+                    ),
                     fixed_release_count=fixed_releases,
                     adaptive_release_count=adaptive_releases,
+                    fixed_start_count=fixed_starts,
+                    adaptive_start_count=adaptive_starts,
                     fixed_projected_available_count=(
-                        source.available_evse_count + fixed_releases
+                        source.available_evse_count + fixed_releases - fixed_starts
                     ),
                     fixed_projected_charging_count=(
-                        source.charging_evse_count - fixed_releases
+                        source.charging_evse_count - fixed_releases + fixed_starts
                     ),
                     adaptive_projected_available_count=(
-                        source.available_evse_count + adaptive_releases
+                        source.available_evse_count
+                        + adaptive_releases - adaptive_starts
                     ),
                     adaptive_projected_charging_count=(
-                        source.charging_evse_count - adaptive_releases
+                        source.charging_evse_count
+                        - adaptive_releases + adaptive_starts
                     ),
                     effective_policy_adjustment_eur_per_min=(
                         composition.effective_policy_adjustment_eur_per_min
@@ -347,6 +437,10 @@ def run_paired_simulation_grid(
             eligible = [point for point in points if point.comparison_eligible]
             fixed_total = sum(point.fixed_release_count for point in eligible)
             adaptive_total = sum(point.adaptive_release_count for point in eligible)
+            fixed_start_total = sum(point.fixed_start_count for point in eligible)
+            adaptive_start_total = sum(
+                point.adaptive_start_count for point in eligible
+            )
             run = PairedSimulationRun(
                 scenario=scenario,
                 replication_index=replication_index,
@@ -357,6 +451,11 @@ def run_paired_simulation_grid(
                 fixed_release_count=fixed_total,
                 adaptive_release_count=adaptive_total,
                 additional_release_count=adaptive_total-fixed_total,
+                fixed_start_count=fixed_start_total,
+                adaptive_start_count=adaptive_start_total,
+                deferred_or_displaced_start_proxy_count=(
+                    fixed_start_total - adaptive_start_total
+                ),
             )
             run.validate()
             runs.append(run)
@@ -378,8 +477,12 @@ def _withheld_point(at, source, reason):
         source_charging_count=source.charging_evse_count,
         baseline_release_probability=None,
         adaptive_release_probability=None,
+        baseline_start_probability=None,
+        adaptive_start_probability=None,
         fixed_release_count=None,
         adaptive_release_count=None,
+        fixed_start_count=None,
+        adaptive_start_count=None,
         fixed_projected_available_count=None,
         fixed_projected_charging_count=None,
         adaptive_projected_available_count=None,
