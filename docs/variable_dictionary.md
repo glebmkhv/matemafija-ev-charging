@@ -250,6 +250,11 @@ They retain `simulated` provenance and `scenario_conditional` claim scope; the
 canonical definitions and current episode-metric exclusion are documented in
 [`simulation_evaluation.md`](simulation_evaluation.md).
 
+`improvement_probability`, its Wilson interval, `robust_success` and
+`minimum_tested_theta_release` are simulation-study outputs rather than
+observed system variables. Their definitions, direction convention and
+conditional claim boundary are fixed in [`robustness.md`](robustness.md).
+
 ## 9. Currently unavailable concepts
 
 | Concept | Status | Why it is unavailable | Permitted next action |

@@ -11,6 +11,7 @@ try:
     from .simulation_grid import (
         PairedProjectionPoint,
         PairedSimulationRun,
+        SimulationGridSpecification,
         SimulationGridResult,
         SimulationScenario,
     )
@@ -22,6 +23,7 @@ except ImportError:  # pragma: no cover
     from simulation_grid import (
         PairedProjectionPoint,
         PairedSimulationRun,
+        SimulationGridSpecification,
         SimulationGridResult,
         SimulationScenario,
     )
@@ -61,6 +63,25 @@ class ProjectedScarcitySummary:
             raise ValueError("Projected scarcity ratios must be in [0, 1]")
         if self.eligible_point_count == 0 and any(value is not None for value in ratios):
             raise ValueError("Ineligible projections cannot have scarcity ratios")
+        if self.eligible_point_count > 0:
+            expected_share = (
+                self.zero_availability_point_count / self.eligible_point_count
+            )
+            if not math.isclose(
+                self.zero_availability_snapshot_share,
+                expected_share,
+                rel_tol=0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError("Projected zero-availability share is inconsistent")
+            if not math.isclose(
+                self.mean_availability_ratio
+                + self.mean_operational_scarcity_ratio,
+                1.0,
+                rel_tol=0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError("Projected mean scarcity partition is inconsistent")
 
 
 @dataclass(frozen=True)
@@ -116,6 +137,7 @@ class PairedScarcityEvaluation:
 
 @dataclass(frozen=True)
 class SimulationGridEvaluation:
+    grid: SimulationGridSpecification
     evaluations: tuple[PairedScarcityEvaluation, ...]
     simulation_grid_version: str
     baseline_generator_kind: str
@@ -125,6 +147,8 @@ class SimulationGridEvaluation:
     evaluation_version: str = SIMULATION_EVALUATION_VERSION
 
     def validate(self, grid_result: SimulationGridResult):
+        if self.grid != grid_result.grid:
+            raise ValueError("Evaluation grid does not match the simulation grid")
         if len(self.evaluations) != len(grid_result.runs):
             raise ValueError("Every simulation run requires one scarcity evaluation")
         if not _valid_coverage_threshold(self.minimum_coverage_required):
@@ -222,6 +246,7 @@ def evaluate_simulation_grid_scarcity(
         for run in grid_result.runs
     )
     result = SimulationGridEvaluation(
+        grid=grid_result.grid,
         evaluations=evaluations,
         simulation_grid_version=grid_result.simulation_grid_version,
         baseline_generator_kind=grid_result.baseline_generator_kind,

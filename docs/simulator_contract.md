@@ -461,6 +461,12 @@ projections are independent
 one-step outcomes, simulated episode count and duration are explicitly
 withheld; see [`simulation_evaluation.md`](simulation_evaluation.md).
 
+Scenario replications are aggregated by the conservative protocol in
+[`robustness.md`](robustness.md). A robust cell requires the lower Wilson bound
+for improvement probability—not only its point estimate—to meet the declared
+threshold. Reported response thresholds are minima among tested grid values,
+not continuous estimates of actual user sensitivity.
+
 Names such as `capacity_released_by_fee`, `users_changing_behaviour`,
 `waiting_time_reduction` and `queue_length_reduction` remain forbidden because
 without qualification they read as causal or observed claims. Each result must

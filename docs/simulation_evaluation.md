@@ -97,7 +97,6 @@ Not permitted:
 > The policy was observed to reduce queues, waiting time, post-charge idle or
 > persistent real-world scarcity episodes.
 
-Step 13 may aggregate the paired per-replication changes into uncertainty
-intervals, robustness regions and minimum response thresholds without changing
-these definitions.
-
+The paired per-replication changes are aggregated into uncertainty intervals,
+robustness regions and minimum tested response thresholds in
+[`robustness.md`](robustness.md) without changing these definitions.
