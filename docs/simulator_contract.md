@@ -78,8 +78,10 @@ estimated from Vilnius behaviour or causally predicted. Every result has
 disclosure plus response-model identity/version.
 
 The mode requires a deterministic random seed so paired policy runs are
-reproducible. A future experiment runner will additionally use common random
-numbers between matched scenarios.
+reproducible. The implemented experiment runner uses common random numbers
+between matched fixed/adaptive arms and across scenario coordinates; its
+one-step projection semantics are specified in
+[`simulation_grid.md`](simulation_grid.md).
 
 Policy-independent baseline paths are produced by the versioned generators in
 [`trajectory_generators.md`](trajectory_generators.md). Paired policy runs must
@@ -317,6 +319,11 @@ The sole implemented mechanism is the exponential-hazard release response in
 [`release_response.md`](release_response.md). Its driver interface is fixed,
 and the driver is produced by the component-aware F1/OSA/adoption integration in
 [`policy_integration.md`](policy_integration.md).
+
+The first stochastic consumer of this contract is the paired release-only
+runner in [`simulation_grid.md`](simulation_grid.md). It projects each baseline
+snapshot independently and conserves operational capacity. It intentionally
+does not feed projected states forward before an arrival mechanism exists.
 
 `BehaviouralResponseSpecification` remains reserved for validated
 counterfactual execution. It requires evidence metadata, a validation report,

@@ -60,6 +60,10 @@ The component-aware composition of factual F1, OSA-v1, rollout/intensity and
 the release-response driver is documented in
 [`docs/policy_integration.md`](docs/policy_integration.md).
 
+The reproducible scenario grid, paired common-random-number Monte Carlo and
+release-only conditional projection semantics are documented in
+[`docs/simulation_grid.md`](docs/simulation_grid.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

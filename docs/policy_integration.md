@@ -104,6 +104,8 @@ release-response result. It does not yet draw state transitions.
 
 ## 6. Explicit exclusions
 
-This layer does not implement Monte Carlo, state mutation, scarcity metric
-comparison, robustness regions, arrival response or spatial redistribution.
-Those remain later project steps.
+This layer itself does not draw stochastic transitions. The downstream paired
+Monte Carlo runner is now implemented in
+[`simulation_grid.md`](simulation_grid.md). Scarcity metric comparison,
+robustness regions, arrival response and spatial redistribution remain later
+project steps.

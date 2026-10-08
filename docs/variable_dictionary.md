@@ -239,6 +239,12 @@ These variables express a rule being evaluated; they are not inferred facts.
 | `policy_recalculation_interval` | policy_defined | minutes | `5` in OSA-v1 | Matches the expected observation cadence. |
 | `scarcity_activation_rule` | policy_defined | rule | OSA-v1 | Eligible operational scarcity above `0.5`, at least one charging EVSE, acceptable equipment loss, 15-minute grace and 30-minute ramp. |
 
+The scenario runner varies `price_intensity_lambda`, assumed
+`theta_release` and assumed response delay as separate axes. Replication seed
+is a reproducibility control, not a system variable. Paired projected release
+counts and available/charging counts have `simulated` provenance and are
+defined in [`simulation_grid.md`](simulation_grid.md).
+
 ## 9. Currently unavailable concepts
 
 | Concept | Status | Why it is unavailable | Permitted next action |
