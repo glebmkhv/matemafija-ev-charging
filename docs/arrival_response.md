@@ -46,12 +46,12 @@ abandonment. Every scarcity/robustness result exposes this trade-off. Improving
 availability by suppressing accepted starts is not automatically a welfare
 improvement.
 
-Step 15 may spatially allocate this proxy flow under explicit rules. Until then
-it remains unassigned and cannot increase another station's load.
+The optional downstream allocation is implemented in
+[`spatial_redistribution.md`](spatial_redistribution.md). Any part not allocated
+under its explicit distance/capacity assumptions remains unassigned.
 
 ## Claim boundary
 
 Sensitivity is assumed, adjusted transitions are simulated, and conclusions
 remain scenario-conditional. This channel does not estimate price elasticity,
 total arrivals, queues, waiting time, served trips or causal demand destruction.
-

@@ -76,6 +76,10 @@ The conservative robustness region, improvement-frequency uncertainty and
 minimum tested release-response threshold are documented in
 [`docs/robustness.md`](docs/robustness.md).
 
+Capacity-constrained allocation of displaced accepted-start proxies across
+nearby OCPI locations is documented in
+[`docs/spatial_redistribution.md`](docs/spatial_redistribution.md).
+
 The versioned inputs, execution modes, events, outputs and claim boundaries of
 the common fixed/adaptive evaluation environment are defined in
 [`docs/simulator_contract.md`](docs/simulator_contract.md).

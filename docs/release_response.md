@@ -101,5 +101,6 @@ does not invent releases where the fitted baseline contains no release process.
 
 This function itself does not calculate policy/adoption or draw a transition.
 The separate accepted-start proxy is documented in `arrival_response.md`;
-spatial redistribution, queue/idle inference and claims that the assumed
-response is true in Vilnius remain excluded.
+spatial allocation is a separate downstream assumption layer; queue/idle
+inference and claims that the assumed response is true in Vilnius remain
+excluded.

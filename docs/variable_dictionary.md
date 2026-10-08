@@ -249,8 +249,14 @@ defined in [`simulation_grid.md`](simulation_grid.md).
 
 `deferred_or_displaced_start_proxy_count` is the simulated fixed-minus-adaptive
 difference in accepted `available -> charging` transitions. It is not observed
-lost demand and remains spatially unassigned; see
+lost demand and is unassigned unless the optional spatial layer is run; see
 [`arrival_response.md`](arrival_response.md).
+
+When the optional spatial layer is enabled, its candidate, allocated,
+network-unallocated and unresolved counts remain `simulated`. Maximum distance,
+redistribution probability and receiver-capacity fraction are `assumed`.
+Definitions and conservation rules are in
+[`spatial_redistribution.md`](spatial_redistribution.md).
 
 Paired scarcity changes use the explicit `adaptive - fixed` sign convention.
 They retain `simulated` provenance and `scenario_conditional` claim scope; the

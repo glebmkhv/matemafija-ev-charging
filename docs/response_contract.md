@@ -128,4 +128,5 @@ available -> charging  (`charging_start_proxy`)
 
 Both use exponential hazard shifts, assumed non-negative sensitivities and an
 explicit delayed driver. A positive adjustment increases release hazard and
-decreases accepted-start hazard. Spatial redistribution remains absent.
+decreases accepted-start hazard. Optional downstream spatial allocation is
+specified separately in [`spatial_redistribution.md`](spatial_redistribution.md).

@@ -109,5 +109,6 @@ release-response result. It does not yet draw state transitions.
 This layer itself does not draw stochastic transitions. The downstream paired
 Monte Carlo runner is now implemented in
 [`simulation_grid.md`](simulation_grid.md). Scarcity metric comparison,
-spatial redistribution remains a later project step. Release and accepted-start
-responses are drawn by the downstream paired simulator.
+Release and accepted-start responses are drawn by the downstream paired
+simulator. Optional capacity-constrained spatial allocation is a separate layer
+documented in [`spatial_redistribution.md`](spatial_redistribution.md).

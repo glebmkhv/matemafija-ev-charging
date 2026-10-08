@@ -467,6 +467,12 @@ for improvement probability—not only its point estimate—to meet the declared
 threshold. Reported response thresholds are minima among tested grid values,
 not continuous estimates of actual user sensitivity.
 
+An optional post-processing layer may allocate displaced accepted-start proxies
+across nearby sites under explicit assumed distance, participation and capacity
+constraints. It must report unassigned flow and receiver scarcity transfer;
+see [`spatial_redistribution.md`](spatial_redistribution.md). It does not convert
+the assumption-driven run into a validated mobility forecast.
+
 Names such as `capacity_released_by_fee`, `users_changing_behaviour`,
 `waiting_time_reduction` and `queue_length_reduction` remain forbidden because
 without qualification they read as causal or observed claims. Each result must
