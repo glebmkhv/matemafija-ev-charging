@@ -1,0 +1,20 @@
+\selectlanguage *[]{russian}
+\contentsline {section}{\numberline {1}Почему этот слой вообще нужен}{3}{section.1}%
+\contentsline {section}{\numberline {2}Сначала различим четыре разных объекта}{3}{section.2}%
+\contentsline {section}{\numberline {3}Что такое hazard}{3}{section.3}%
+\contentsline {section}{\numberline {4}Два канала: release и accepted start}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Release channel}{3}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Accepted-start channel}{4}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Что такое выделенный $D_i(t)$}{4}{section.5}%
+\contentsline {section}{\numberline {6}Что делает $P_i(t)^\gamma R_i(t)$}{4}{section.6}%
+\contentsline {section}{\numberline {7}Что делает выделенный $d_i(t)$}{4}{section.7}%
+\contentsline {section}{\numberline {8}Как $h_1$ влияет в текущем коде: цепочка по шагам}{5}{section.8}%
+\contentsline {section}{\numberline {9}Числовой пример влияния}{5}{section.9}%
+\contentsline {section}{\numberline {10}Почему common random numbers важны}{6}{section.10}%
+\contentsline {section}{\numberline {11}Что означает one-step projection}{6}{section.11}%
+\contentsline {section}{\numberline {12}Что такое grid, replications и $\Delta M$}{6}{section.12}%
+\contentsline {section}{\numberline {13}Wilson bound, robustness и minimum threshold}{6}{section.13}%
+\contentsline {section}{\numberline {14}Что происходит прямо сейчас, а что пока нет}{7}{section.14}%
+\contentsline {section}{\numberline {15}Где это находится в репозитории}{7}{section.15}%
+\contentsline {section}{\numberline {16}Как это объяснить жюри за 30 секунд}{7}{section.16}%
+\contentsline {section}{\numberline {17}Пять проверочных вопросов}{7}{section.17}%

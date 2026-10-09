@@ -1,0 +1,224 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}\setmainfont{Arial}\setsansfont{Arial}\setmonofont{Arial}
+\usepackage{polyglossia}\setdefaultlanguage{russian}\setotherlanguage{english}
+\usepackage{geometry,amsmath,amssymb,booktabs,longtable,tabularx,array,enumitem,xcolor,hyperref,fancyhdr,tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\geometry{margin=18mm}\setlength{\headheight}{14pt}\setlength{\parindent}{0pt}\setlength{\parskip}{6pt}
+\setlist{leftmargin=*,nosep}
+\definecolor{navy}{HTML}{17365D}\definecolor{teal}{HTML}{167D8D}\definecolor{pale}{HTML}{EEF5F7}\definecolor{orange}{HTML}{D87800}\definecolor{green}{HTML}{287A4A}
+\hypersetup{colorlinks=true,linkcolor=navy,urlcolor=teal}
+\pagestyle{fancy}\fancyhf{}\lhead{MATEMAFIJA}\rhead{Объяснение модели}\cfoot{\thepage}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\explain}[1]{\vspace{1mm}\noindent\fcolorbox{teal}{pale}{\parbox{0.94\linewidth}{#1}}\vspace{1mm}}
+\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[2mm]\Large Что это, зачем это и как оно работает\\[2mm]\large Подробное объяснение выделенных частей Project Guide}
+\author{Учебное дополнение для команды}
+\date{9 октября 2026}
+
+\begin{document}\maketitle
+\explain{\textbf{Короткий ответ на главный вопрос.} $h_1^{release}$ и $h_1^{start}$ --- не наблюдаемые величины и не новая цена. Это две \textbf{условные интенсивности переходов} после применения гипотетической реакции на adaptive price. В текущем коде они преобразуются в вероятности, затем в stochastic release/start events, затем в projected EVSE counts и scarcity metrics. Они влияют только на assumption-driven simulation. Они не изменяют SQLite, observed history, F1 или сам OSA signal.}
+\tableofcontents\newpage
+
+\section{Почему этот слой вообще нужен}
+Pricing policy отвечает только на вопрос: \emph{какой ценовой сигнал показать?} Но город интересует другой вопрос: \emph{изменится ли доступность зарядок?} Между ценой и доступностью отсутствует автоматически известная связь.
+
+Поэтому архитектура разделена:
+\[
+\text{observed state}\rightarrow\text{price decision}\rightarrow
+\boxed{\text{behavioural response assumption}}\rightarrow
+\text{simulated state}\rightarrow\text{scarcity metrics}.
+\]
+Без центрального response block формула OSA могла бы показать только цену. Она не могла бы освободить ни одного EVSE даже внутри модели.
+
+\section{Сначала различим четыре разных объекта}
+\begin{tabularx}{\textwidth}{p{3cm}X p{3cm}}
+\toprule Объект & Что означает & Provenance \\\midrule
+$h_0(t)$ & baseline transition hazard, оценённый из qualified historical transitions & estimated \\
+$d_i(t)$ & применимый policy adjustment в EUR/min после $\lambda$ и rollout & policy-defined \\
+$\theta_r,\theta_a,\tau$ & предполагаемая чувствительность и задержка & assumed \\
+$h_1(t),q_1(t)$ & изменённые hazard/probability при данном сценарии & simulated \\
+\bottomrule
+\end{tabularx}
+
+Ключевой смысл: $h_0$ описывает «как система обычно переходила», $d$ --- «какой сигнал создаёт policy», $\theta$ --- «как мы допускаем, что люди реагируют», а $h_1$ --- «каким станет transition process, если это допущение верно».
+
+\section{Что такое hazard}
+Hazard $h$ --- не вероятность и не число машин. Это мгновенная условная интенсивность события с единицей $1/\text{hour}$. Для шага длительностью $\Delta t$ она превращается в вероятность:
+\[
+q=1-\exp(-h\Delta t).
+\]
+При маленьком шаге $q\approx h\Delta t$, но код использует точную формулу. Например, при $h=0.6/\text{hour}$ и $\Delta t=5$ min $=1/12$ hour:
+\[
+q=1-e^{-0.6/12}\approx0.0488.
+\]
+То есть каждый подходящий EVSE имеет примерно 4.88\% вероятности такого перехода на следующем пятиминутном шаге. Это не означает, что событие обязательно произойдёт.
+
+\section{Два канала: release и accepted start}
+\subsection{Release channel}
+\[
+\boxed{h_1^{release}(t)=h_0^{release}(t)\exp\{\theta_r d_i(t-\tau)\}}
+\]
+\textbf{Что это:} условная интенсивность перехода \code{charging $\to$ available} после price response.\\
+\textbf{Зачем:} выразить гипотезу, что положительный price adjustment ускоряет освобождение EVSE.\\
+\textbf{Почему знак плюс:} при $\theta_r,d>0$ множитель $e^{\theta_r d}>1$.\\
+\textbf{Что это не доказывает:} окончание энергии, post-charge idle и мотив конкретного водителя не наблюдаются. Поэтому название --- \emph{release proxy}.
+
+\subsection{Accepted-start channel}
+\[
+\boxed{h_1^{start}(t)=h_0^{start}(t)\exp\{-\theta_a d_i(t-\tau)\}}
+\]
+\textbf{Что это:} условная интенсивность перехода \code{available $\to$ charging}.\\
+\textbf{Зачем:} учесть, что более высокая цена может уменьшить число принятых данной станцией charging starts.\\
+\textbf{Почему знак минус:} при $\theta_a,d>0$ множитель $e^{-\theta_a d}<1$.\\
+\textbf{Что это не означает:} мы не видим всех arrivals. Это accepted-start proxy; отвергнутая/отложенная попытка могла исчезнуть, перенестись или произойти позднее.
+
+\explain{Release улучшает availability через большее число переходов charging $\to$ available. Start response также может улучшить availability, но ценой меньшего accepted use. Поэтому проект обязан показывать \code{deferred\_or\_displaced\_start\_proxy}; иначе можно было бы ошибочно назвать подавление спроса эффективностью.}
+
+\section{Что такое выделенный $D_i(t)$}
+$D_i(t)$ --- время с начала \textbf{непрерывно наблюдаемого qualifying scarcity condition}. Это reconstructed lower bound, а не время простоя автомобиля.
+
+Condition продолжается, только если одновременно: snapshot пригоден; scarcity выше trigger; есть хотя бы один charging EVSE; equipment loss не превышает guard; нет collection gap больше допустимого. При нарушении duration сбрасывается.
+
+\textbf{Зачем:} не повышать цену из-за единственного шумного snapshot. Устойчивый дефицит сильнее кратковременного.
+
+\section{Что делает $P_i(t)^\gamma R_i(t)$}
+\[
+P_i=\operatorname{clip}\left(\frac{C_i-C_{trigger}}{1-C_{trigger}},0,1\right),\qquad
+R_i=\operatorname{clip}\left(\frac{D_i-T_{grace}}{T_{ramp}},0,1\right).
+\]
+$P_i$ отвечает «насколько сильный scarcity», $R_i$ --- «насколько долго он длится после grace». $\gamma=1.2$ немного подавляет слабое pressure и подчёркивает сильное. Их произведение
+\[
+S_i=P_i^\gamma R_i
+\]
+лежит в $[0,1]$. Затем $\Delta p_{raw}=0.05S_i$ EUR/min. Следовательно, cap математически гарантирован.
+
+Пример: $C=0.75$, trigger $0.5$, $D=30$ min. Тогда $P=0.5$, $R=(30-15)/30=0.5$, $S\approx0.5^{1.2}\cdot0.5\approx0.218$, а raw adjustment около 0.0109 EUR/min.
+
+\section{Что делает выделенный $d_i(t)$}
+\[
+d_i(t)=R_i^{rollout}(t)\lambda\Delta p_{raw}(i,t).
+\]
+Это \textbf{финальный response driver}, уже пригодный для behavioural layer.
+\begin{itemize}
+\item $R_i^{rollout}=0/1$: policy ещё не/уже развёрнута на site.
+\item $\lambda\in[0,1]$: intensity. При $\lambda=0$ adaptive effect отсутствует; при 1 применяется весь raw adjustment.
+\item $\Delta p_{raw}$: output OSA-v1.
+\end{itemize}
+Coverage $\kappa$ выбирает долю sites/EVSE, rollout определяет где и когда, а $\lambda$ --- силу. Их нельзя смешивать.
+
+\section{Как $h_1$ влияет в текущем коде: цепочка по шагам}
+\begin{center}
+\begin{tikzpicture}[node distance=4mm,every node/.style={font=\small},b/.style={draw,rounded corners,fill=pale,text width=13cm,align=center,minimum height=8mm},a/.style={-{Stealth},thick,teal}]
+\node[b](x){OSA + F1 + adoption $\rightarrow d_i(t)$};
+\node[b,below=of x](h){$h_0$ из transition model; response formula $\rightarrow h_1^{release},h_1^{start}$};
+\node[b,below=of h](q){$q_0=1-e^{-h_0\Delta t}$ и $q_1=1-e^{-h_1\Delta t}$};
+\node[b,below=of q](u){Для каждого source EVSE генерируется $u\sim U(0,1)$; то же $u$ используется в fixed и adaptive};
+\node[b,below=of u](n){Событие происходит, если $u<q$: получаем release/start counts};
+\node[b,below=of n](s){$A'=A+releases-starts$, $C'=C-releases+starts$};
+\node[b,below=of s](m){Одинаковые scarcity metrics $\rightarrow\Delta M\rightarrow$ robustness};
+\foreach \x/\y in {x/h,h/q,q/u,u/n,n/s,s/m}\draw[a](\x)--(\y);
+\end{tikzpicture}
+\end{center}
+
+То есть $h_1$ влияет не напрямую на metric, а через четыре преобразования: hazard $\to$ probability $\to$ random transition count $\to$ projected state $\to$ metric.
+
+\section{Числовой пример влияния}
+Пусть шаг 5 минут, $d=0.03$ EUR/min.
+
+\textbf{Release:} $h_0^r=0.6$/h, $\theta_r=20$ min/EUR.
+\[
+e^{\theta_r d}=e^{0.6}=1.822,\quad h_1^r=1.093/\text{h}.
+\]
+\[
+q_0^r=1-e^{-0.6/12}=0.0488,\quad q_1^r=1-e^{-1.093/12}=0.0871.
+\]
+Для 10 charging EVSE expected releases на шаге меняются примерно с 0.49 до 0.87.
+
+\textbf{Start:} $h_0^a=0.4$/h, $\theta_a=15$ min/EUR.
+\[
+e^{-\theta_a d}=e^{-0.45}=0.638,\quad h_1^a=0.255/\text{h};
+\]
+\[
+q_0^a\approx0.0328,\quad q_1^a\approx0.0210.
+\]
+Для 10 available EVSE expected accepted starts меняются примерно с 0.33 до 0.21.
+
+В одной replication целые counts могут совпасть из-за случайности. Поэтому выполняется много paired replications и оценивается частота улучшения.
+
+\section{Почему common random numbers важны}
+Если fixed и adaptive получили бы независимые random draws, разница могла бы возникнуть просто из-за удачи. Сейчас один и тот же $u$ сравнивается с $q_0$ и $q_1$.
+
+Например, $q_0^r=0.049$, $q_1^r=0.087$:
+\begin{itemize}
+\item $u=0.03$: release в обоих arms;
+\item $u=0.07$: только adaptive release --- эффект response assumption;
+\item $u=0.20$: release ни в одном arm.
+\end{itemize}
+Так paired difference лучше изолирует влияние policy/response parameters.
+
+\section{Что означает one-step projection}
+Для каждого baseline snapshot строится независимый следующий условный state. Projected state из момента $t$ \textbf{не становится} source state в $t+1$.
+
+\textbf{Зачем так сделано сейчас:} это безопасный MVP, который не накапливает ошибки и не требует пока полной demand/queue/spatial dynamics.\\
+\textbf{Цена ограничения:} нельзя интерпретировать соседние projected snapshots как связную траекторию; поэтому simulated episode duration отключена. Можно оценивать snapshot-level availability/scarcity, но не длительность simulated shortage episode.
+
+\section{Что такое grid, replications и $\Delta M$}
+Grid перебирает все комбинации:
+\[
+\lambda\times\theta_r\times\theta_a\times\tau\times\text{replication}.
+\]
+Одна комбинация без replication --- scenario assumptions. Replications отвечают за stochastic uncertainty. Для каждого запуска:
+\[
+\Delta M=M_{adaptive}-M_{fixed}.
+\]
+Знак зависит от metric: для zero-availability/scarcity отрицательный --- лучше; для availability положительный --- лучше.
+
+\section{Wilson bound, robustness и minimum threshold}
+Если adaptive лучше в $k$ из $n$ replications, $\hat p=k/n$. Но просто $\hat p\ge0.8$ при малом $n$ слишком оптимистично. Wilson interval учитывает uncertainty доли.
+
+Текущий robust criterion: минимум 20 valid replications и \textbf{нижняя 95\% Wilson bound $\ge0.80$}. Это означает: даже консервативная граница должна пройти 80\%.
+
+\textbf{Minimum response threshold} --- наименьшее протестированное $\theta_r$, прошедшее criterion при фиксированных $\lambda,\theta_a,\tau$. Это не истинная elasticity и не аналитически найденный optimum; это threshold на выбранном grid.
+
+\section{Что происходит прямо сейчас, а что пока нет}
+\begin{tabularx}{\textwidth}{X X}
+\toprule Уже реализовано в коде & Пока не является эмпирическим результатом \\\midrule
+формулы release/start hazard shifts & значения $\theta$ не оценены по Vilnius intervention \\
+hazard-to-probability conversion & нет доказанной causal response \\
+paired Bernoulli draws & нет observed queue/waiting/idle \\
+projected counts и scarcity metrics & нет stateful multi-step trajectory \\
+grid, replications, Wilson robustness & current data window ещё не проходит 7-day gate \\
+withholding при неготовых inputs & heatmap не должна публиковаться до readiness \\
+\bottomrule
+\end{tabularx}
+
+Главное практическое следствие: $h_1$ \textbf{работает как программный механизм}, но его численные outputs пока не должны подаваться как результат о реальном поведении водителей Вильнюса. UI lock отделяет implementation readiness от evidence readiness.
+
+\section{Где это находится в репозитории}
+\begin{longtable}{p{5.5cm}p{10.5cm}}
+\toprule Файл & Ответственность \\\midrule\endhead
+\code{src/transition\_model.py} & оценивает qualified $h_0^{release}$ и $h_0^{start}$.\\
+\code{src/adaptive\_policy.py} & рассчитывает OSA raw adjustment из pressure/persistence.\\
+\code{src/policy\_integration.py} & применяет $\lambda$, rollout и создаёт $d_i(t)$.\\
+\code{src/release\_response.py} & рассчитывает release multiplier, $h_1^r$, $q_0^r$, $q_1^r$.\\
+\code{src/arrival\_response.py} & рассчитывает start multiplier, $h_1^a$, $q_0^a$, $q_1^a$.\\
+\code{src/simulation\_grid.py} & draws, counts, one-step states, paired runs.\\
+\code{src/simulation\_evaluation.py} & одинаковые scarcity metrics и $\Delta M$.\\
+\code{src/robustness.py} & Wilson bounds, robust region, tested threshold.\\
+\bottomrule
+\end{longtable}
+
+\section{Как это объяснить жюри за 30 секунд}
+«Цена сама по себе не изменяет доступность. Поэтому мы отделяем pricing mechanism от response assumption. Из истории оцениваем baseline rates переходов charging-to-available и available-to-charging. Затем явно варьируем неизвестную sensitivity: положительная price adjustment может ускорить release и уменьшить accepted starts. Эти hazards превращаются в paired stochastic transitions и проходят через одни scarcity metrics. Мы не выдаём assumptions за поведение Vilnius; мы ищем threshold, который затем можно проверить пилотом.»
+
+\section{Пять проверочных вопросов}
+\begin{enumerate}
+\item Если $d=0$ или $\theta=0$, почему $h_1=h_0$?
+\item Почему больше release и меньше starts оба улучшают availability, но только второе создаёт access trade-off?
+\item Почему $h$ нельзя назвать вероятностью без $\Delta t$?
+\item Почему one-step model не позволяет считать simulated episode duration?
+\item Почему robust threshold остаётся conditional, даже после тысячи replications?
+\end{enumerate}
+Если ответы ясны, центральная логика simulator понятна.
+
+\vfill\small\textit{Документ объясняет реализацию репозитория на 9 октября 2026. Все behavioural sensitivities остаются assumed до пилотной или иной надёжной валидации.}
+\end{document}
