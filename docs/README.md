@@ -77,6 +77,8 @@ for implementation-level definitions.
 
 ## Communication
 
+- [Policy Lab flow](policy_lab.md) — six-step jury interface, readiness locks,
+  explanatory response controls and joint decision narrative.
 - [Data and modelling assumptions](assumptions.md)
 - [Pitch narrative and demo sequence](pitch_narrative.md)
 - `matemafija_project_guide.tex` — editable source for the public PDF guide.

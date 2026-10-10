@@ -118,12 +118,14 @@ python src/collect.py --dashboard
 
 ### Policy Lab
 
-`src/policy_dashboard.py` presents the competition story in four tabs:
+`src/policy_dashboard.py` presents the competition story in six tabs:
 
 1. **Evidence** — observed coverage, station map, tariffs and readiness;
-2. **Mechanism** — OSA-v1 and explicit response assumptions;
-3. **Robustness** — conditional effectiveness and minimum response threshold;
-4. **Decision narrative** — claim-safe interpretation and pilot proposal.
+2. **Policy** — scarcity contribution, MCU pool and funded alternatives;
+3. **Response** — explicit release, start and receiver-choice assumptions;
+4. **Evaluation** — system, redistribution, user-proxy and accounting domains;
+5. **Robustness** — conjunctive gates, missingness and Wilson-bound decision;
+6. **Decision** — claim-safe pilot narrative and DAEI separation.
 
 ### Data explorer
 

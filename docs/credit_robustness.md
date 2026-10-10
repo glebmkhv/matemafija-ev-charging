@@ -89,5 +89,6 @@ These fields cannot become true in the current public-data model.
 
 The project now has a conservative joint robustness region that preserves
 domain failures and missing evidence rather than hiding them in a composite
-score. Step 16 may expose this structure in the Policy Lab: controls, paired
-trajectories, domain cards, scenario map and explicit validation boundaries.
+score. The implemented [Policy Lab](policy_lab.md) now exposes this structure
+through explanatory controls, domain cards, gate logic and explicit validation
+boundaries. Step 17 may align the remaining public documentation.

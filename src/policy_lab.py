@@ -5,7 +5,7 @@ from datetime import datetime
 import math
 
 
-POLICY_LAB_VERSION = "1.0.0"
+POLICY_LAB_VERSION = "2.0.0"
 REQUIRED_HISTORY_DAYS = 7.0
 
 
@@ -121,24 +121,83 @@ def response_curve(
     return tuple(result)
 
 
+def receiver_choice_curve(
+    credit_values_mcu,
+    *,
+    beta_credit_per_mcu,
+    beta_distance_per_km,
+    distance_km,
+):
+    """Illustrate receiver-vs-outside choice without implying fitted behaviour."""
+    numeric = (beta_credit_per_mcu, beta_distance_per_km, distance_km)
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        or not math.isfinite(value) or value < 0
+        for value in numeric
+    ):
+        raise ValueError("Receiver-choice parameters must be finite and non-negative")
+    rows = []
+    for credit in credit_values_mcu:
+        if (isinstance(credit, bool) or not isinstance(credit, (int, float))
+                or not math.isfinite(credit) or credit < 0):
+            raise ValueError("Illustrative credit values must be non-negative")
+        utility = beta_credit_per_mcu*credit-beta_distance_per_km*distance_km
+        if not -700 <= utility <= 700:
+            raise ValueError("Receiver-choice utility is outside numerical bounds")
+        receiver_probability = 1/(1+math.exp(-utility))
+        rows.append({
+            "credit_mcu": credit,
+            "distance_km": distance_km,
+            "receiver_probability": receiver_probability,
+            "outside_probability": 1-receiver_probability,
+        })
+    return tuple(rows)
+
+
+def policy_lab_flow():
+    """Return the fixed jury-facing story without embedding simulation results."""
+    return (
+        ("Evidence", "Observed OCPI/DATEX states and F1 tariff"),
+        ("Policy", "OSA scarcity contribution and funded MCU alternatives"),
+        ("Response", "Assumed release, start and receiver-choice mechanisms"),
+        ("Simulation", "Paired common-random-number trajectories and ledger"),
+        ("Evaluation", "System, redistribution, user-proxy and accounting"),
+        ("Decision", "Joint observable robustness and measurable pilot"),
+    )
+
+
+def joint_gate_preview(system, redistribution, user_proxy, accounting):
+    """Explain conjunctive status; None remains non-evaluable."""
+    gates = (system, redistribution, user_proxy, accounting)
+    if any(value not in (True, False, None) for value in gates):
+        raise ValueError("Policy Lab gates must be true, false or unavailable")
+    if any(value is False for value in gates):
+        return "failure"
+    if any(value is None for value in gates):
+        return "not_evaluable"
+    return "success"
+
+
 def policy_claims():
     return {
         "supported_now": (
             "Observed OCPI/DATEX coverage and factual tariff structure",
             "Observable scarcity without claiming a physical queue",
-            "Reproducible behaviour of OSA-v1 and response assumptions",
-            "Scenario-conditional thresholds once formal readiness gates pass",
+            "Reproducible OSA, MCU ledger and explicit response assumptions",
+            "Scenario-conditional observable robustness after all domain gates pass",
         ),
         "not_supported": (
             "Observed price elasticity of Vilnius drivers",
             "Causal queue or waiting-time reduction",
             "Observed post-charge idle time",
-            "Guaranteed revenue, welfare or mobility effect",
+            "Guaranteed welfare, demographic fairness or mobility effect",
+            "Equivalence between MATEMAFIJA MCU and regulated DAEI units",
         ),
         "city_next_action": (
             "Continue collection through the formal readiness window",
+            "Agree operator roles, funding and credit acceptance rules",
             "Run a bounded pilot on selected sites",
-            "Measure sessions, accepted starts and displaced use",
+            "Measure sessions, choices, redemption and displaced use",
             "Replace assumed response parameters with validated estimates",
         ),
     }

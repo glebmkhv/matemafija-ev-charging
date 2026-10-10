@@ -2,7 +2,10 @@ import sqlite3
 import unittest
 from datetime import datetime, timezone
 
-from src.policy_lab import load_policy_lab_evidence, policy_claims, response_curve
+from src.policy_lab import (
+    joint_gate_preview, load_policy_lab_evidence, policy_claims,
+    policy_lab_flow, receiver_choice_curve, response_curve,
+)
 
 
 class PolicyLabTest(unittest.TestCase):
@@ -49,6 +52,43 @@ class PolicyLabTest(unittest.TestCase):
         claims = policy_claims()
         self.assertTrue(any("Causal" in item for item in claims["not_supported"]))
         self.assertTrue(any("pilot" in item for item in claims["city_next_action"]))
+
+    def test_credit_and_distance_have_transparent_choice_directions(self):
+        low_credit = receiver_choice_curve(
+            (0, 10, 25), beta_credit_per_mcu=.1,
+            beta_distance_per_km=.5, distance_km=2,
+        )
+        self.assertLess(
+            low_credit[0]["receiver_probability"],
+            low_credit[-1]["receiver_probability"],
+        )
+        near = receiver_choice_curve(
+            (10,), beta_credit_per_mcu=.1,
+            beta_distance_per_km=.5, distance_km=1,
+        )[0]
+        far = receiver_choice_curve(
+            (10,), beta_credit_per_mcu=.1,
+            beta_distance_per_km=.5, distance_km=4,
+        )[0]
+        self.assertGreater(near["receiver_probability"],
+                           far["receiver_probability"])
+
+    def test_policy_lab_flow_covers_evidence_to_decision(self):
+        flow = policy_lab_flow()
+        self.assertEqual(flow[0][0], "Evidence")
+        self.assertEqual(flow[-1][0], "Decision")
+        self.assertEqual(len(flow), 6)
+
+    def test_joint_gate_preview_never_promotes_missing_or_failure(self):
+        self.assertEqual(
+            joint_gate_preview(True, True, True, True), "success",
+        )
+        self.assertEqual(
+            joint_gate_preview(True, None, True, True), "not_evaluable",
+        )
+        self.assertEqual(
+            joint_gate_preview(True, None, False, True), "failure",
+        )
 
 
 if __name__ == "__main__":
