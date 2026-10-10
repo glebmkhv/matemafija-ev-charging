@@ -231,11 +231,12 @@ outputs/
 # Local render and inspection intermediates
 tmp/
 
-# Generated artifacts, except the public project guide
+# Generated artifacts, except the two public presentation documents
 output/*
 !output/pdf/
 output/pdf/*
 !output/pdf/matemafija_project_guide.pdf
+!output/pdf/matemafija_five_minute_speech.pdf
 
 # Ignoring PyCharm
 .idea/

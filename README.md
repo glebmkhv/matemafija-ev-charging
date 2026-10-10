@@ -76,9 +76,10 @@ the assumption-driven mode.
 
 Collection started on 6 October 2026. The repository contains the full
 pipeline, policies, simulator contracts, evaluation and interfaces, while the
-local database itself remains untracked. At the guide snapshot on 8 October
-2026, it contained roughly 1.92 million status observations across 1,984 current
-OCPI locations, but only about 2.2 days of history.
+local database itself remains untracked. At the guide snapshot on 10 October
+2026, it contained roughly 2.84 million status observations across 1,984 current
+OCPI location records, but only about 4.08 days of history. These are provider
+records, not a count of unique physical stations.
 
 The formal transition-model gate requires at least seven qualified local days.
 Until that gate passes, the Policy Lab intentionally locks the effectiveness
@@ -148,6 +149,7 @@ not invent queues, idle time, congestion scores or causal effects.
 ## Documentation
 
 - [Full project and presentation guide](output/pdf/matemafija_project_guide.pdf)
+- [Final five-minute speech and production notes](output/pdf/matemafija_five_minute_speech.pdf)
 - [Documentation map](docs/README.md)
 - [Three-minute pitch and demo sequence](docs/pitch_narrative.md)
 - [Variable and provenance contract](docs/variable_dictionary.md)
@@ -162,11 +164,11 @@ The Markdown documents are the normative technical specifications.
 
 ```text
 src/        collection, storage, reconstruction, policy and simulation modules
-docs/       formal contracts, assumptions, guide source and pitch narrative
+docs/       formal contracts, assumptions, guide and final speech sources
 tests/      automated unit and contract tests
 data/       local database location; large collected data are not committed
 notebooks/  exploratory analysis
-output/pdf/ generated public project guide
+output/pdf/ generated public guide and five-minute speech
 ```
 
 ## Verification

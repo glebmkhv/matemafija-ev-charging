@@ -84,6 +84,8 @@ for implementation-level definitions.
 - [Data and modelling assumptions](assumptions.md)
 - [Pitch narrative and demo sequence](pitch_narrative.md)
 - `matemafija_project_guide.tex` — editable source for the public PDF guide.
+- `matemafija_five_minute_speech.tex` — final five-minute script, demo cues and
+  jury answers; the compiled PDF is linked from the repository README.
 
 All documents must preserve the same claim discipline: assumptions are not
 observations, simulations are not forecasts, and current effectiveness results

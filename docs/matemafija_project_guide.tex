@@ -15,13 +15,13 @@
 \setlength{\parskip}{5pt}
 \definecolor{navy}{HTML}{17365D}\definecolor{teal}{HTML}{167D8D}\definecolor{pale}{HTML}{EEF5F7}\definecolor{warn}{HTML}{8A4B08}
 \setlength{\headheight}{14pt}
-\pagestyle{fancy}\fancyhf{}\lhead{MATEMAFIJA}\rhead{Project Guide}\cfoot{\thepage}
+\pagestyle{fancy}\fancyhf{}\lhead{MATEMAFIJA}\rhead{Team Project Guide}\cfoot{\thepage}
 \newcommand{\term}[1]{\textbf{#1}}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\boxtext}[1]{\vspace{2mm}\noindent\fcolorbox{teal}{pale}{\parbox{0.94\linewidth}{#1}}\vspace{2mm}}
-\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]\Large Полный guide по проекту и защите\\[2mm]\large Hack4Vilnius EV Charging Policy Lab}
-\author{Командный учебный документ}
-\date{Версия 2.0 --- 10 октября 2026}
+\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]\Large Полный team guide по проекту и защите\\[2mm]\large Hack4Vilnius EV Charging Policy Lab}
+\author{Рабочий документ Глеба и Галины}
+\date{Финальная hackathon-версия 3.0 --- 10 октября 2026}
 
 \begin{document}
 \maketitle
@@ -32,7 +32,7 @@
 \section{Как пользоваться guide}
 Сначала прочитайте разделы 2--5: после них вы сможете за 10 минут объяснить идею. Затем изучите 6--13 для понимания реализации. Перед защитой используйте разделы 14--17: demo, pitch, вопросы жюри и шпаргалка.
 
-\textbf{Разделение ролей при подготовке:} один человек отвечает за data pipeline и доказательную дисциплину; второй --- за policy, simulation и городской смысл. Но каждый должен уметь произнести краткий ответ из раздела 17 и объяснить все обозначения из словаря.
+\textbf{Разделение ролей при подготовке:} Глеб ведёт data pipeline, model contracts, demo и технические ответы; Галина ведёт problem story, users/business, city benefit и основную речь. Но каждый должен уметь восстановить весь flow по памяти, объяснить provenance каждого числа и назвать claim boundary.
 
 \section{Проект за 10 минут}
 \subsection{Проблема}
@@ -43,6 +43,9 @@
 
 \subsection{Что получает город}
 Город получает ответ не «какую цену или награду немедленно поставить», а: \emph{при каких price-and-credit response assumptions политика проходит system, redistribution, user-proxy и accounting gates; и как спроектировать ограниченный измеримый пилот}.
+
+\subsection{Кто пользователь и кто платит}
+Ежедневный beneficiary --- водитель, которому показывается пригодная альтернатива и bounded incentive. Operational user --- charging operator, который тестирует network utilisation, receiver capacity и fundability. Первый реалистичный customer --- партнёрство города и CPO для policy analysis и bounded pilot. На MVP нельзя обещать готовую revenue model: pilot должен определить funding source, operator liability, acceptance и settlement. Product сегодня --- decision-support и pilot-design tool, а не consumer wallet.
 
 \section{Архитектура целиком}
 \begin{center}
@@ -77,7 +80,7 @@ simulated & результат модели, не реальный факт & co
 
 Все timestamps хранятся как timezone-aware UTC; календарные признаки рассчитываются в \code{Europe/Vilnius}. Наивный OCPI timestamp интерпретируется как локальное время Вильнюса и затем переводится в UTC. Collection gap не считается нулевым спросом.
 
-\boxtext{\textbf{Текущий снимок БД (08.10.2026):} около 1.92 млн OCPI EVSE-status observations, 1,984 current locations, 1,701 tariffs, 5,886 tariff assignments и примерно 2.2 дня общего временного окна. База велика по числу строк, но пока коротка по календарной длительности. Поэтому formal 7-day transition gate ещё не выполнен. Это не ошибка интерфейса: effectiveness heatmap намеренно заблокирован до достаточного baseline.}
+\boxtext{\textbf{Текущий снимок БД (10.10.2026, около 17:47 EEST):} 2,836,399 OCPI EVSE-status observations; 1,984 current OCPI location records; 1,707 tariffs; 5,900 tariff assignments; 4.08 дня временного окна. В записях с city, содержащим Vilnius: 892 locations и 2,120 EVSE, из них 1,331 available и 180 charging в текущем snapshot. Это source records, не утверждение об уникальных физических станциях. Formal 7-day gate ещё не выполнен, поэтому effectiveness heatmap намеренно заблокирован. Числа пересчитать перед записью: collector продолжает работу.}
 
 \section{Термины без жаргона}
 \begin{longtable}{p{3.5cm}p{12.5cm}}
@@ -186,6 +189,33 @@ A'=A+\text{releases}-\text{starts},\qquad C'=C-\text{releases}+\text{starts}.
 
 Каждый run оценивается отдельно по system, redistribution, user-proxy и accounting domains. Joint run success требует прохождения всех четырёх gates; missing evidence остаётся \code{not\_evaluable}. Scenario получает \code{observable\_policy\_robust} только при минимум 20 valid replications, доле non-evaluable не более 0.20 и нижней 95\% Wilson bound joint success не меньше 0.80. Это не validated welfare/fairness и не pilot readiness.
 
+\subsection{Contribution и MCU accounting}
+MCU --- целое scenario-accounting unit: $1$ MCU имеет policy-defined reference $0.01$ EUR-equivalent eligible charging service. Это не деньги, balance пользователя, cashback или DAEI conversion. В режиме \code{unit\_accounting} реальная session duration не выдумывается; используется reference interval $q_{ref}=5$ min:
+\[
+c_i^{MCU}(t)=\operatorname{round\_half\_up}\!\left(d_i(t)\,q_{ref}\,100\right).
+\]
+При cap $0.05$ EUR/min максимум --- 25 MCU на qualifying origin opportunity. Quote не является funding. Только completed simulated origin service может создать future inflow; current offer финансируется prior pool.
+
+Ledger invariant после каждого события:
+\[
+funded=available+reserved+outstanding+settled.
+\]
+Reserve и offerable amount:
+\[
+reserve_{target}=\left\lceil r(available+reserved+outstanding)\right\rceil,
+\qquad offerable=\max(0,available-reserve_{target}).
+\]
+Offer не двигает MCU; reservation переводит available $\to$ reserved; issuance --- reserved $\to$ outstanding; redemption --- outstanding $\to$ settled. MCU и receiver capacity резервируются атомарно.
+
+\subsection{Credit-sensitive receiver choice}
+Для opportunity $o$ и qualified receiver $j$:
+\[
+V_{oj}=\beta_c c_{oj}-\beta_d d_{oj}+\beta_a A_j,
+\qquad
+P(j\mid o)=\frac{e^{V_{oj}}}{1+\sum_{k\in J_o}e^{V_{ok}}}.
+\]
+Outside option имеет utility 0 и вероятность $1/(1+\sum e^{V})$. Здесь $c$ --- funded MCU offer, $d$ --- straight-line distance, $A$ --- receiver availability; $\beta$ имеют provenance \code{assumed}. Distance не равен route time, а probability не является observed choice share.
+
 \section{Spatial redistribution}
 Displaced starts не исчезают автоматически. Пространственный модуль распределяет только их proxy между nearby receivers при assumed redistribution probability, straight-line distance limit и receiver capacity fraction. Алгоритм seeded, integer, nearest-first, без overbooking; выполняется conservation: allocated + unassigned = candidates.
 
@@ -234,6 +264,22 @@ python -m unittest discover -s tests -v
 
 \textbf{Ещё нет как доказанного результата:} фактической elasticity водителей; observed queue/waiting/post-charge idle; causal proof; Session/CDR totals; road travel time; validated welfare/fairness; operator settlement; production deployment. Receiver eligibility и global offer allocation остаются approved design contracts и explicit inputs. Эти пункты --- честная граница MVP и программа пилота.
 
+\section{Какие outputs можно показать}
+\begin{longtable}{p{4.0cm}p{7.2cm}p{4.5cm}}
+\toprule Output & Что показываем & Разрешённый смысл \\\midrule\endhead
+Live evidence & карта, sources, timestamps, status counts, tariff components & реальные current observations \\
+Readiness & history span, coverage и blocker reasons & почему model output разрешён или withheld \\
+OSA-v1 & pressure, persistence, bounded adjustment & policy mechanism, не фактический bill \\
+Response curves & release/start probability и receiver choice & sensitivity assumption, не measured elasticity \\
+MCU flow & pool, offer, reservation, issuance, redemption & reconciled simulated accounting \\
+Four domains & system, redistribution, user-proxy, accounting & раздельные evaluation outputs \\
+Joint robustness & Wilson rule, threshold, not-evaluable handling & scenario-conditional decision rule \\
+Decision & pilot evidence и partner ask & следующий проверяемый шаг \\
+\bottomrule
+\end{longtable}
+
+\textbf{Главный демонстрационный путь:} один реальный Vilnius site/source/timestamp $\to$ qualified или withheld scarcity state $\to$ bounded OSA signal $\to$ funded alternative scenario $\to$ assumed response $\to$ four-domain decision. Если data gate закрыт, нельзя показывать coloured effectiveness как результат; показывается честный lock и illustrative mechanism curve.
+
 \section{Как проводить demo}
 \begin{enumerate}
 \item \textbf{Evidence:} покажите карту, реальные состояния, tariff structure и readiness gate. Скажите, что большое число строк не заменяет календарную длительность.
@@ -245,7 +291,7 @@ python -m unittest discover -s tests -v
 \end{enumerate}
 Никогда не тратьте demo на прокрутку кода. Код нужен для ответа о reproducibility; интерфейс --- для рассказа решения.
 
-\section{Трёхминутный pitch}
+\section{Трёхминутный pitch: смысловой каркас}
 \textbf{0:00--0:25.} «Вильнюс видит состояние зарядок, но не видит очередь и не знает, как водители ответят на новую цену. Поэтому обещать эффект было бы нечестно.»
 
 \textbf{0:25--1:00.} «Мы превратили OCPI и DATEX в единый evidence pipeline: восстановили доступность, интервалы и scarcity, а реальный OCPI тариф используем как baseline.»
@@ -279,6 +325,10 @@ python -m unittest discover -s tests -v
 
 \textbf{Что сделать городу завтра?} Продолжить collection, выбрать sites после readiness audit, обеспечить Session/CDR, провести bounded A/B или staggered rollout и оценить заранее заданные outcomes.
 
+\textbf{Кто платит?} Рабочая гипотеза --- city--operator pilot partnership. Prior funded contributions и явно раскрытый subsidy могут финансировать MCU scenario; real liability и settlement должны быть согласованы до выдачи value пользователям.
+
+\textbf{Какой один KPI?} Qualified zero-availability snapshot share должен снизиться без ухудшения receiver scarcity; accounting при этом остаётся solvent and reconciled.
+
 \section{Подготовка команды}
 \textbf{Сессия 1 (60 мин):} вместе нарисовать pipeline по памяти; объяснить друг другу provenance и claim scopes.\\
 \textbf{Сессия 2 (60 мин):} один объясняет F1/OSA, второй --- transition/response/robustness; затем поменяться.\\
@@ -298,7 +348,7 @@ python -m unittest discover -s tests -v
 \item Fair comparison: same path, same random numbers, same metrics.
 \item Decision: Wilson lower bound $\ge 0.8$, minimum 20 replications.
 \item Guardrails: displaced starts, equipment loss, spatial spillover.
-\item Current limitation: roughly 2.2 days; 7-day transition gate not yet passed.
+\item Current limitation: 4.08 days at the 10 October snapshot; 7-day transition gate not yet passed.
 \item Ask: collect $\rightarrow$ qualify sites $\rightarrow$ bounded pilot $\rightarrow$ validate response.
 \end{itemize}
 
@@ -306,5 +356,5 @@ python -m unittest discover -s tests -v
 Если вы оба можете без подсказки ответить на пять вопросов, вы готовы: (1) почему zero availability не queue; (2) чем F1 отличается от OSA; (3) почему $\theta$ assumed; (4) как paired Monte Carlo делает сравнение честнее; (5) почему locked heatmap усиливает, а не ослабляет pitch.
 
 \vfill
-\small\textit{Guide описывает фактическое состояние репозитория на 8 октября 2026. Числа readiness должны пересчитываться перед презентацией, поскольку collector продолжает добавлять данные.}
+\small\textit{Guide описывает фактическое состояние репозитория и локальной базы на 10 октября 2026. Числа readiness должны пересчитываться перед записью и презентацией, поскольку collector продолжает добавлять данные. Нормативные детали определяются versioned Markdown contracts в docs/.}
 \end{document}
