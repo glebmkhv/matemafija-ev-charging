@@ -216,6 +216,5 @@ or sharing a collected database.
 
 ## License
 
-No open-source license has been selected yet. Public visibility alone does not
-grant reuse rights; the repository owner should add the chosen license before
-inviting external reuse or contributions.
+The software in this repository is available under the
+[MIT License](LICENSE). Copyright (c) 2026 MATEMAFIJA team.

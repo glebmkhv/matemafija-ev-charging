@@ -21,7 +21,7 @@ the policy effect has been causally validated in Vilnius.
 | Joint robustness | Pass | Missing evidence is `not_evaluable`; success requires all gates plus replication, missingness and Wilson-bound thresholds. |
 | Claim discipline | Pass | No observed queue, post-charge idle time, welfare, demographic fairness or causal effect is claimed. |
 | Jury interface | Pass | The six-tab Policy Lab follows evidence → policy → response → evaluation → robustness → decision. |
-| Public-repository hygiene | Pass with owner action | No tracked database, credentials or large data artifact; public/private audience wording, documentation languages and notebook validity were checked. A licence still requires an owner choice. |
+| Public-repository hygiene | Pass | No tracked database, credentials or large data artifact; public/private audience wording, documentation languages and notebook validity were checked. The repository is released under the MIT License. |
 
 ## 2. Verification performed
 
@@ -72,8 +72,7 @@ stronger operational claims:
 - agree operator funding, receiver eligibility, allocation and settlement;
 - validate routing, accessibility, cross-operator acceptance and demographic
   distribution with appropriate data;
-- complete legal, privacy and consumer-protection review;
-- choose and add an open-source licence before inviting external reuse.
+- complete legal, privacy and consumer-protection review.
 
 Therefore these values remain fixed in the current public-data model:
 
