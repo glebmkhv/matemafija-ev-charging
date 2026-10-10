@@ -1,6 +1,6 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.1; implementation pending**.
+Status: **approved product and research contract v0.2; implementation pending**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -221,7 +221,8 @@ Future implementation must satisfy all of the following:
 The approved sequence for the first PLAN milestone is:
 
 1. product thesis and claim boundaries -- **complete in this contract**;
-2. participants and event catalogue;
+2. participants and event catalogue -- **complete in
+   [`credit_events.md`](credit_events.md)**;
 3. accounting unit and lifecycle rules;
 4. contribution-pool formula and accounting modes;
 5. alternative-site eligibility;
@@ -242,9 +243,8 @@ The approved sequence for the first PLAN milestone is:
 Later steps may refine a formula but must not weaken the claim boundary or
 provenance separation without an explicit versioned amendment to this contract.
 
-## 12. Step-one acceptance decision
+## 12. Acceptance state
 
-Step one is complete when the team accepts this document as the normative
-boundary for subsequent design. No code behaviour changes in this step. The
-next implementation action is to define participants, event types and legal
-state transitions for contribution and credit operations.
+Steps 1 and 2 are complete at the contract level. No code behaviour changes in
+these steps. The next implementation action is to define the accounting unit,
+denomination, precision, issuance/redemption semantics and expiry rules.

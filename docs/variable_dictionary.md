@@ -262,6 +262,8 @@ milestone. They do not imply that a real payment or user account exists.
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in
 [`credit_circulation.md`](credit_circulation.md).
+Logical participants, canonical event names, allowed lifecycle transitions and
+terminal reconciliation are defined in [`credit_events.md`](credit_events.md).
 
 The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
 assumed `theta_arrival` and assumed response delay as separate axes. Replication seed
