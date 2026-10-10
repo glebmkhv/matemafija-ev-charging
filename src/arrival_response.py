@@ -6,17 +6,25 @@ import math
 from typing import Iterable
 
 try:
+    from .release_response import (
+        ORIGIN_PRICE_SIGNAL_NAME, ORIGIN_PRICE_SIGNAL_UNIT,
+    )
     from .simulation_contract import (
         AssumptionDrivenResponseSpecification, PolicyIndependentResponseContract,
         ProvenanceClass, ResponseDriverContract, ResponseDriverPoint,
-        ResponseMonotonicity, ResponseParameterDefinition,
+        ResponseMonotonicity, ResponseParameterDefinition, ResponseSignalState,
+        TypedResponseSignalPoint,
     )
     from .transition_model import TransitionHazardEstimate
 except ImportError:  # pragma: no cover
+    from release_response import (
+        ORIGIN_PRICE_SIGNAL_NAME, ORIGIN_PRICE_SIGNAL_UNIT,
+    )
     from simulation_contract import (
         AssumptionDrivenResponseSpecification, PolicyIndependentResponseContract,
         ProvenanceClass, ResponseDriverContract, ResponseDriverPoint,
-        ResponseMonotonicity, ResponseParameterDefinition,
+        ResponseMonotonicity, ResponseParameterDefinition, ResponseSignalState,
+        TypedResponseSignalPoint,
     )
     from transition_model import TransitionHazardEstimate
 
@@ -26,6 +34,8 @@ ARRIVAL_CONTRACT_ID = "charging-start-hazard-exponential-shift"
 ARRIVAL_PARAMETER_NAME = "theta_arrival"
 ARRIVAL_DRIVER_NAME = "effective_policy_adjustment"
 ARRIVAL_DRIVER_UNIT = "EUR/min"
+ARRIVAL_V2_VERSION = "2.0.0"
+ARRIVAL_V2_CONTRACT_ID = "charging-start-hazard-typed-exponential-shift"
 
 
 @dataclass(frozen=True)
@@ -82,7 +92,199 @@ class ArrivalResponseResult:
             raise ValueError("Arrival response identity or units are invalid")
 
 
+@dataclass(frozen=True)
+class ArrivalResponseV2Specification:
+    theta_start_price: float
+    delay_start_price_minutes: int = 0
+    model_id: str = "assumed-arrival-response-v2"
+    model_version: str = ARRIVAL_V2_VERSION
+    provenance: ProvenanceClass = ProvenanceClass.ASSUMED
+
+    def validate(self):
+        if not self.model_id or not self.model_version:
+            raise ValueError("Arrival v2 response identity is required")
+        if (isinstance(self.theta_start_price, bool)
+                or not isinstance(self.theta_start_price, (int, float))
+                or not math.isfinite(self.theta_start_price)
+                or self.theta_start_price < 0):
+            raise ValueError("Arrival v2 price sensitivity must be finite and non-negative")
+        if (isinstance(self.delay_start_price_minutes, bool)
+                or not isinstance(self.delay_start_price_minutes, int)
+                or self.delay_start_price_minutes < 0):
+            raise ValueError("Arrival v2 delay must be non-negative integer minutes")
+        if self.provenance is not ProvenanceClass.ASSUMED:
+            raise ValueError("Arrival v2 response parameters must be assumed")
+
+
+@dataclass(frozen=True)
+class ArrivalResponseV2Result:
+    entity_id: str
+    evaluation_time_utc: datetime
+    price_signal_time_utc: datetime
+    price_signal_value_eur_per_min: float
+    theta_start_price: float
+    delay_start_price_minutes: int
+    price_exponent_component: float
+    baseline_hazard_per_hour: float
+    hazard_multiplier: float
+    adjusted_hazard_per_hour: float
+    decision_interval_minutes: int
+    baseline_start_probability: float
+    adjusted_start_probability: float
+    response_model_id: str
+    response_model_version: str
+    response_contract_id: str = ARRIVAL_V2_CONTRACT_ID
+    response_contract_version: str = ARRIVAL_V2_VERSION
+    provenance: ProvenanceClass = ProvenanceClass.SIMULATED
+
+    def validate(self):
+        if (self.evaluation_time_utc.tzinfo is None
+                or self.price_signal_time_utc.tzinfo is None):
+            raise ValueError("Arrival v2 timestamps must include timezones")
+        if self.price_signal_time_utc > self.evaluation_time_utc - timedelta(
+            minutes=self.delay_start_price_minutes
+        ):
+            raise ValueError("Arrival v2 price signal violates its delay")
+        values = (
+            self.price_signal_value_eur_per_min, self.theta_start_price,
+            self.price_exponent_component, self.baseline_hazard_per_hour,
+            self.hazard_multiplier, self.adjusted_hazard_per_hour,
+            self.baseline_start_probability, self.adjusted_start_probability,
+        )
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("Arrival v2 response values must be finite")
+        if min(
+            self.price_signal_value_eur_per_min, self.theta_start_price,
+            self.baseline_hazard_per_hour, self.hazard_multiplier,
+            self.adjusted_hazard_per_hour,
+        ) < 0:
+            raise ValueError("Arrival v2 drivers, sensitivity and hazards cannot be negative")
+        if not -700 <= self.price_exponent_component <= 0:
+            raise ValueError("Arrival v2 exponent is outside its safe directional bounds")
+        if not math.isclose(
+            self.price_exponent_component,
+            -self.theta_start_price * self.price_signal_value_eur_per_min,
+            rel_tol=1e-12, abs_tol=1e-12,
+        ):
+            raise ValueError("Arrival v2 exponent component is inconsistent")
+        if not math.isclose(
+            self.hazard_multiplier, math.exp(self.price_exponent_component),
+            rel_tol=1e-12, abs_tol=1e-12,
+        ):
+            raise ValueError("Arrival v2 hazard multiplier is inconsistent")
+        if not math.isclose(
+            self.adjusted_hazard_per_hour,
+            self.baseline_hazard_per_hour * self.hazard_multiplier,
+            rel_tol=1e-12, abs_tol=1e-12,
+        ):
+            raise ValueError("Arrival v2 adjusted hazard is inconsistent")
+        if not 0 <= self.baseline_start_probability <= 1:
+            raise ValueError("Baseline start probability must be in [0, 1]")
+        if not 0 <= self.adjusted_start_probability <= 1:
+            raise ValueError("Adjusted start probability must be in [0, 1]")
+        if self.adjusted_start_probability > self.baseline_start_probability:
+            raise ValueError("Arrival v2 violates the non-increasing start response")
+        if self.provenance is not ProvenanceClass.SIMULATED:
+            raise ValueError("Arrival v2 response must have simulated provenance")
+
+
+def arrival_response_v2_specification(
+    theta_start_price: float,
+    *,
+    delay_start_price_minutes: int = 0,
+    model_id: str = "assumed-arrival-response-v2",
+    model_version: str = ARRIVAL_V2_VERSION,
+):
+    specification = ArrivalResponseV2Specification(
+        theta_start_price=theta_start_price,
+        delay_start_price_minutes=delay_start_price_minutes,
+        model_id=model_id,
+        model_version=model_version,
+    )
+    specification.validate()
+    return specification
+
+
+def apply_arrival_response_v2(
+    baseline: TransitionHazardEstimate,
+    price_signal_points: Iterable[TypedResponseSignalPoint],
+    specification: ArrivalResponseV2Specification,
+    *,
+    entity_id: str,
+    evaluation_time_utc: datetime,
+):
+    """Apply the typed origin price term; credit belongs to receiver choice."""
+    if evaluation_time_utc.tzinfo is None:
+        raise ValueError("Arrival v2 evaluation time must include a timezone")
+    specification.validate()
+    if (baseline.channel != "charging_start_proxy"
+            or baseline.source_status != "available"
+            or baseline.destination_status != "charging"):
+        raise ValueError("Arrival v2 requires an available-to-charging baseline")
+    if not baseline.locally_qualified or baseline.hazard_per_hour is None:
+        raise ValueError("Arrival v2 requires a qualified baseline hazard")
+    if baseline.hazard_per_hour < 0:
+        raise ValueError("Baseline charging-start hazard cannot be negative")
+
+    cutoff = evaluation_time_utc - timedelta(
+        minutes=specification.delay_start_price_minutes
+    )
+    candidates = []
+    seen = set()
+    for point in price_signal_points:
+        if point.entity_id != entity_id:
+            continue
+        point.validate(
+            expected_name=ORIGIN_PRICE_SIGNAL_NAME,
+            expected_unit=ORIGIN_PRICE_SIGNAL_UNIT,
+            allowed_provenance=(ProvenanceClass.POLICY_DEFINED,),
+        )
+        if point.effective_at_utc in seen:
+            raise ValueError("Duplicate typed price signal time for one entity")
+        seen.add(point.effective_at_utc)
+        if point.effective_at_utc <= cutoff:
+            candidates.append(point)
+    if not candidates:
+        raise ValueError(
+            "No origin_price_contribution_rate signal is available at the delayed evaluation time"
+        )
+    price = max(candidates, key=lambda item: item.effective_at_utc)
+    if price.state is not ResponseSignalState.AVAILABLE:
+        raise ValueError(f"Arrival v2 price signal is {price.state.value}: {price.reason_code}")
+    if price.value < 0:
+        raise ValueError("Origin price contribution rate cannot be negative")
+
+    exponent = -specification.theta_start_price * price.value
+    if not -700 <= exponent <= 0:
+        raise ValueError("Arrival v2 exponent is outside numerical safety bounds")
+    multiplier = math.exp(exponent)
+    adjusted_hazard = baseline.hazard_per_hour * multiplier
+    interval_hours = baseline.decision_interval_minutes / 60
+    q0 = 1 - math.exp(-baseline.hazard_per_hour * interval_hours)
+    q1 = 1 - math.exp(-adjusted_hazard * interval_hours)
+    result = ArrivalResponseV2Result(
+        entity_id=entity_id,
+        evaluation_time_utc=evaluation_time_utc,
+        price_signal_time_utc=price.effective_at_utc,
+        price_signal_value_eur_per_min=float(price.value),
+        theta_start_price=specification.theta_start_price,
+        delay_start_price_minutes=specification.delay_start_price_minutes,
+        price_exponent_component=exponent,
+        baseline_hazard_per_hour=baseline.hazard_per_hour,
+        hazard_multiplier=multiplier,
+        adjusted_hazard_per_hour=adjusted_hazard,
+        decision_interval_minutes=baseline.decision_interval_minutes,
+        baseline_start_probability=q0,
+        adjusted_start_probability=q1,
+        response_model_id=specification.model_id,
+        response_model_version=specification.model_version,
+    )
+    result.validate()
+    return result
+
+
 def arrival_response_contract():
+    """Return the original scalar v1 compatibility contract."""
     return PolicyIndependentResponseContract(
         contract_id=ARRIVAL_CONTRACT_ID,
         contract_version=ARRIVAL_RESPONSE_VERSION,

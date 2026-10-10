@@ -1,6 +1,6 @@
 # Paired simulation grid and Monte Carlo protocol
 
-Status: **implemented v2.0.0**.
+Status: **implemented v2.1.0**.
 
 `src/simulation_grid.py` implements a seeded paired experiment over release and
 accepted-start responses. It does not introduce a queue, post-charge idle time
@@ -92,6 +92,8 @@ Every run records:
 - baseline and adjusted release/start probabilities;
 - paired fixed/adaptive release and accepted-start counts;
 - `deferred_or_displaced_start_proxy_count`;
+- one traceable `RedistributionCandidate` for every paired fixed-start minus
+  adaptive-start difference;
 - paired projected available/charging counts;
 - the effective policy adjustment;
 - eligible and withheld counts;
@@ -100,6 +102,11 @@ Every run records:
 All projected outcomes have `simulated` provenance. `theta_release`,
 `theta_arrival` and delay remain `assumed`; `lambda`, rollout and tariff remain
 `policy_defined`; the baseline transition estimate remains `estimated`.
+
+Candidate records retain the originating scenario, replication, timestamp,
+available-unit index, paired uniform and both start probabilities. Their count
+must reconcile by timestamp and run with the aggregate displaced-start proxy.
+They are counterfactual opportunities, not observed people or vehicles.
 
 Release totals are diagnostic outputs, not the final policy score. Both arms
 are now evaluated with the same snapshot-level scarcity definitions in

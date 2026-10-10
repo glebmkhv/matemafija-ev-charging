@@ -2,9 +2,10 @@
 
 Status: **implemented assumption-driven layer v1.0.0**.
 
-`src/spatial_redistribution.py` implements step 15. It allocates only the
-already simulated `deferred_or_displaced_start_proxy_count` between OCPI
-locations with coordinates and available receiving capacity.
+`src/spatial_redistribution.py` implements the legacy spatial prototype. Its
+compatibility adapter aggregates only validated unit-level redistribution
+candidates before processing OCPI locations with coordinates and available
+receiving capacity.
 
 ## 1. Inputs and provenance
 
@@ -21,10 +22,12 @@ not substituted without an explicit reviewed mapping.
 
 ## 2. Candidate generation
 
-For each displaced start proxy, a seeded Bernoulli draw with
-`redistribution_probability` determines whether it becomes a redistribution
-candidate. Non-candidates remain `unresolved_or_nonparticipating`; they are not
-called abandoned demand.
+For each already validated displaced-start candidate, the legacy layer applies
+a second seeded Bernoulli participation draw using
+`redistribution_probability`. Non-participants remain
+`unresolved_or_nonparticipating`; they are not called abandoned demand. Step 10
+replaces this coarse second-stage probability with typed credit-sensitive
+receiver choice.
 
 Usable destination capacity is conservatively bounded by:
 
@@ -83,4 +86,3 @@ receiver.
 These limitations must remain visible in the interface and pitch. The output
 is `simulated`, `scenario_conditional`, and suitable for stress testing—not a
 mobility forecast or route recommendation.
-

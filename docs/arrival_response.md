@@ -1,6 +1,6 @@
 # Charging-start (arrival-response proxy) channel
 
-Status: **implemented assumption-driven mechanism v1.0.0**.
+Status: **implemented v1.0.0 compatibility profile and typed v2.0.0 profile**.
 
 `src/arrival_response.py` modifies only the observed accepted-use proxy:
 
@@ -55,3 +55,59 @@ under its explicit distance/capacity assumptions remains unassigned.
 Sensitivity is assumed, adjusted transitions are simulated, and conclusions
 remain scenario-conditional. This channel does not estimate price elasticity,
 total arrivals, queues, waiting time, served trips or causal demand destruction.
+
+## Typed v2 accepted-start profile
+
+The executable v2 form retains the same mechanism with an explicitly typed
+origin signal:
+
+```text
+h_start,2 = h_start,0 * exp(
+    -theta_start_price * delayed_origin_price_contribution_rate
+)
+```
+
+The signal is `EUR/min` with `policy_defined` provenance; sensitivity is
+`min/EUR` and delay is an independent assumed non-negative integer number of
+minutes. The v2 evaluator rejects withheld, non-applicable, negative,
+unit-mismatched, future and duplicate signals. Its result reconciles the
+exponent, multiplier and adjusted hazard.
+
+Alternative-site credits deliberately do not enter this origin equation. They
+operate later in destination choice. This prevents one credit from being
+counted both as the reason an origin start disappeared and as the reason a
+receiver was selected.
+
+## Unit-level redistribution candidates
+
+Simulation grid v2.1 retains the common random number for every source
+available-EVSE draw. A `RedistributionCandidate` is created exactly when:
+
+```text
+adaptive_start_probability <= paired_uniform < baseline_start_probability
+```
+
+Thus the fixed arm contains a start proxy and the adaptive arm does not. Every
+candidate records:
+
+- stable candidate, scenario and replication identities;
+- origin site/entity and UTC timestamp;
+- source available-unit index and paired uniform;
+- baseline and adaptive start probabilities;
+- explicit scenario-conditional claim scope and simulated provenance.
+
+The candidate is not a person, vehicle, rejected arrival or proven trip. It is
+one traceable counterfactual opportunity eligible for the later choice layer.
+
+For every run and timestamp the simulator enforces:
+
+```text
+candidate_count
+  = fixed_start_proxy_count - adaptive_start_proxy_count
+  = deferred_or_displaced_start_proxy_count
+```
+
+Candidate IDs must be unique. The spatial compatibility adapter now aggregates
+these validated records instead of independently recalculating demand from
+totals. Step 10 will replace probabilistic nearest-first participation with the
+credit-sensitive receiver-choice contract.

@@ -420,12 +420,21 @@ def redistribute_displaced_start_proxies(
 def displaced_proxies_from_run(origin_site_id, run):
     """Adapt one paired simulation run into timestamped displaced proxies."""
     run.validate()
+    if any(
+        candidate.origin_site_id != origin_site_id
+        for candidate in run.redistribution_candidates
+    ):
+        raise ValueError("Redistribution candidate belongs to another origin site")
+    candidate_count_by_time = {}
+    for candidate in run.redistribution_candidates:
+        candidate_count_by_time[candidate.evaluation_time_utc] = (
+            candidate_count_by_time.get(candidate.evaluation_time_utc, 0) + 1
+        )
     return tuple(DisplacedStartProxy(
         origin_site_id=origin_site_id,
         evaluation_time_utc=point.evaluation_time_utc,
-        displaced_start_proxy_count=(
-            point.fixed_start_count - point.adaptive_start_count
-            if point.comparison_eligible else 0
+        displaced_start_proxy_count=candidate_count_by_time.get(
+            point.evaluation_time_utc, 0
         ),
     ) for point in run.points)
 

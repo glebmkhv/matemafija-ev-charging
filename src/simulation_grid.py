@@ -8,25 +8,86 @@ import random
 
 try:
     from .adaptive_policy import OsaDecision
-    from .arrival_response import apply_arrival_response, arrival_response_specification
+    from .arrival_response import (
+        apply_arrival_response_v2, arrival_response_v2_specification,
+    )
     from .fixed_policy import ObservedTariff
     from .policy_integration import CompositionStatus, compose_adaptive_tariff
-    from .release_response import apply_release_response, release_response_specification
-    from .simulation_contract import PolicyAdoptionSpecification, ProvenanceClass
+    from .release_response import (
+        apply_release_response, release_response_specification,
+        typed_price_signal_from_v1,
+    )
+    from .simulation_contract import (
+        ClaimScope, PolicyAdoptionSpecification, ProvenanceClass,
+    )
     from .trajectory import BaselineTrajectory
     from .transition_model import SiteTransitionModel
 except ImportError:  # pragma: no cover
     from adaptive_policy import OsaDecision
-    from arrival_response import apply_arrival_response, arrival_response_specification
+    from arrival_response import (
+        apply_arrival_response_v2, arrival_response_v2_specification,
+    )
     from fixed_policy import ObservedTariff
     from policy_integration import CompositionStatus, compose_adaptive_tariff
-    from release_response import apply_release_response, release_response_specification
-    from simulation_contract import PolicyAdoptionSpecification, ProvenanceClass
+    from release_response import (
+        apply_release_response, release_response_specification,
+        typed_price_signal_from_v1,
+    )
+    from simulation_contract import (
+        ClaimScope, PolicyAdoptionSpecification, ProvenanceClass,
+    )
     from trajectory import BaselineTrajectory
     from transition_model import SiteTransitionModel
 
 
-SIMULATION_GRID_VERSION = "2.0.0"
+SIMULATION_GRID_VERSION = "2.1.0"
+
+
+@dataclass(frozen=True)
+class RedistributionCandidate:
+    candidate_id: str
+    scenario_id: str
+    replication_index: int
+    origin_site_id: str
+    origin_entity_id: str
+    evaluation_time_utc: datetime
+    source_available_unit_index: int
+    paired_uniform: float
+    baseline_start_probability: float
+    adaptive_start_probability: float
+    reason_code: str = "paired_start_suppressed_by_origin_price_response"
+    claim_scope: ClaimScope = ClaimScope.SCENARIO_CONDITIONAL
+    provenance: ProvenanceClass = ProvenanceClass.SIMULATED
+
+    def validate(self):
+        if not all((self.candidate_id, self.scenario_id, self.origin_site_id,
+                    self.origin_entity_id, self.reason_code)):
+            raise ValueError("Redistribution candidate identity is incomplete")
+        if self.evaluation_time_utc.tzinfo is None:
+            raise ValueError("Redistribution candidate timestamp must include a timezone")
+        if (isinstance(self.replication_index, bool)
+                or not isinstance(self.replication_index, int)
+                or self.replication_index < 0
+                or isinstance(self.source_available_unit_index, bool)
+                or not isinstance(self.source_available_unit_index, int)
+                or self.source_available_unit_index < 0):
+            raise ValueError("Redistribution candidate indices must be non-negative integers")
+        values = (
+            self.paired_uniform, self.baseline_start_probability,
+            self.adaptive_start_probability,
+        )
+        if any(not math.isfinite(value) or not 0 <= value <= 1 for value in values):
+            raise ValueError("Redistribution candidate probabilities must be in [0, 1]")
+        if not (
+            self.adaptive_start_probability
+            <= self.paired_uniform
+            < self.baseline_start_probability
+        ):
+            raise ValueError("Redistribution candidate is not a paired start difference")
+        if self.claim_scope is not ClaimScope.SCENARIO_CONDITIONAL:
+            raise ValueError("Redistribution candidate must remain scenario-conditional")
+        if self.provenance is not ProvenanceClass.SIMULATED:
+            raise ValueError("Redistribution candidate must be simulated")
 
 
 @dataclass(frozen=True)
@@ -180,6 +241,7 @@ class PairedSimulationRun:
     fixed_start_count: int
     adaptive_start_count: int
     deferred_or_displaced_start_proxy_count: int
+    redistribution_candidates: tuple[RedistributionCandidate, ...]
     common_random_numbers: bool = True
 
     def validate(self):
@@ -207,6 +269,34 @@ class PairedSimulationRun:
             raise ValueError("Paired charging-start totals are inconsistent")
         if self.additional_release_count < 0 or self.deferred_or_displaced_start_proxy_count < 0:
             raise ValueError("Adaptive response differences cannot be negative")
+        for candidate in self.redistribution_candidates:
+            candidate.validate()
+            if (candidate.scenario_id != self.scenario.scenario_id
+                    or candidate.replication_index != self.replication_index):
+                raise ValueError("Redistribution candidate belongs to another run")
+        candidate_ids = [item.candidate_id for item in self.redistribution_candidates]
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("Redistribution candidate IDs must be unique within a run")
+        if len(self.redistribution_candidates) != self.deferred_or_displaced_start_proxy_count:
+            raise ValueError("Redistribution candidates do not reconcile with paired starts")
+        candidates_by_time = {}
+        eligible_by_time = {
+            point.evaluation_time_utc: point for point in eligible
+        }
+        for candidate in self.redistribution_candidates:
+            source_point = eligible_by_time.get(candidate.evaluation_time_utc)
+            if source_point is None:
+                raise ValueError("Redistribution candidate lacks an eligible source point")
+            if candidate.source_available_unit_index >= source_point.source_available_count:
+                raise ValueError("Redistribution candidate source unit is out of range")
+            candidates_by_time[candidate.evaluation_time_utc] = (
+                candidates_by_time.get(candidate.evaluation_time_utc, 0) + 1
+            )
+        for point in eligible:
+            if candidates_by_time.get(point.evaluation_time_utc, 0) != (
+                point.fixed_start_count - point.adaptive_start_count
+            ):
+                raise ValueError("Timestamp candidate count does not match paired starts")
         if not self.common_random_numbers:
             raise ValueError("Paired MVP runs require common random numbers")
 
@@ -295,6 +385,9 @@ def run_paired_simulation_grid(
             item.response_driver for item in compositions
             if item.response_driver is not None
         )
+        typed_price_history = tuple(
+            typed_price_signal_from_v1(point) for point in driver_history
+        )
         composition_history = {
             point.trajectory_time_utc: composition
             for point, composition in zip(trajectory.points, compositions)
@@ -303,14 +396,15 @@ def run_paired_simulation_grid(
             scenario.theta_release,
             delay_minutes=scenario.response_delay_minutes,
         )
-        arrival_specification = arrival_response_specification(
+        arrival_specification = arrival_response_v2_specification(
             scenario.theta_arrival,
-            delay_minutes=scenario.response_delay_minutes,
+            delay_start_price_minutes=scenario.response_delay_minutes,
         )
         for replication_index in range(grid.replications):
             replication_seed = grid.random_seed + replication_index
             rng = random.Random(replication_seed)
             points = []
+            redistribution_candidates = []
             for trajectory_point, composition in zip(trajectory.points, compositions):
                 source = trajectory_point.source_state
                 # Consume the same point-level innovations in every scenario,
@@ -360,9 +454,9 @@ def run_paired_simulation_grid(
                         entity_id=entity_id,
                         evaluation_time_utc=trajectory_point.trajectory_time_utc,
                     )
-                    arrival_response = apply_arrival_response(
+                    arrival_response = apply_arrival_response_v2(
                         start_baseline,
-                        driver_history,
+                        typed_price_history,
                         arrival_specification,
                         entity_id=entity_id,
                         evaluation_time_utc=trajectory_point.trajectory_time_utc,
@@ -392,6 +486,34 @@ def run_paired_simulation_grid(
                     value < arrival_response.adjusted_start_probability
                     for value in start_uniforms
                 )
+                for unit_index, value in enumerate(start_uniforms):
+                    if (value < arrival_response.baseline_start_probability
+                            and value >= arrival_response.adjusted_start_probability):
+                        candidate = RedistributionCandidate(
+                            candidate_id=(
+                                f"candidate:{scenario.scenario_id}:"
+                                f"{replication_index}:"
+                                f"{trajectory_point.trajectory_time_utc.isoformat()}:"
+                                f"{unit_index}"
+                            ),
+                            scenario_id=scenario.scenario_id,
+                            replication_index=replication_index,
+                            origin_site_id=trajectory.ocpi_location_key,
+                            origin_entity_id=entity_id,
+                            evaluation_time_utc=(
+                                trajectory_point.trajectory_time_utc
+                            ),
+                            source_available_unit_index=unit_index,
+                            paired_uniform=value,
+                            baseline_start_probability=(
+                                arrival_response.baseline_start_probability
+                            ),
+                            adaptive_start_probability=(
+                                arrival_response.adjusted_start_probability
+                            ),
+                        )
+                        candidate.validate()
+                        redistribution_candidates.append(candidate)
                 point = PairedProjectionPoint(
                     evaluation_time_utc=trajectory_point.trajectory_time_utc,
                     source_available_count=source.available_evse_count,
@@ -456,6 +578,7 @@ def run_paired_simulation_grid(
                 deferred_or_displaced_start_proxy_count=(
                     fixed_start_total - adaptive_start_total
                 ),
+                redistribution_candidates=tuple(redistribution_candidates),
             )
             run.validate()
             runs.append(run)

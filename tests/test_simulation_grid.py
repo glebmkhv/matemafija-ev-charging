@@ -183,6 +183,17 @@ class SimulationGridTest(unittest.TestCase):
                 run.deferred_or_displaced_start_proxy_count,
                 run.fixed_start_count-run.adaptive_start_count,
             )
+            self.assertEqual(
+                len(run.redistribution_candidates),
+                run.deferred_or_displaced_start_proxy_count,
+            )
+            for candidate in run.redistribution_candidates:
+                self.assertEqual(candidate.scenario_id, run.scenario.scenario_id)
+                self.assertEqual(candidate.replication_index, run.replication_index)
+                self.assertLess(candidate.paired_uniform,
+                                candidate.baseline_start_probability)
+                self.assertGreaterEqual(candidate.paired_uniform,
+                                        candidate.adaptive_start_probability)
 
 
 if __name__ == "__main__":
