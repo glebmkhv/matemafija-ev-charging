@@ -373,4 +373,8 @@ def _wilson_interval(successes, trials, confidence_level):
     half = z*math.sqrt(
         probability*(1-probability)/trials+z*z/(4*trials*trials)
     )/denominator
-    return max(0.0, centre-half), min(1.0, centre+half)
+    lower = max(0.0, centre-half)
+    upper = min(1.0, centre+half)
+    # Keep the empirical proportion inside its Wilson interval even when libm
+    # rounds a boundary endpoint one ulp inward on another operating system.
+    return min(lower, probability), max(upper, probability)

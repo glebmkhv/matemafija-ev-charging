@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from src.robustness import (
     RobustnessSpecification,
@@ -87,14 +88,20 @@ def grid_evaluation(replications=20):
 
 class RobustnessTest(unittest.TestCase):
     def test_finds_robust_region_and_minimum_tested_theta(self):
-        result = calculate_robustness_region(grid_evaluation())
+        # This z value reproduces the one-ulp inward Wilson endpoint observed
+        # on the GitHub Ubuntu runner for all-failure/all-success samples.
+        with patch("src.robustness.NormalDist") as normal:
+            normal.return_value.inv_cdf.return_value = 1.9599639845400538
+            result = calculate_robustness_region(grid_evaluation())
         by_theta = {
             row.scenario.theta_release: row
             for row in result.scenario_summaries
         }
         self.assertFalse(by_theta[0].empirically_successful)
         self.assertFalse(by_theta[0].robust_success)
+        self.assertEqual(by_theta[0].improvement_probability_ci_lower, 0)
         self.assertEqual(by_theta[100].improvement_probability, 1)
+        self.assertEqual(by_theta[100].improvement_probability_ci_upper, 1)
         self.assertGreater(by_theta[100].improvement_probability_ci_lower, .8)
         self.assertTrue(by_theta[100].robust_success)
         threshold = result.minimum_response_thresholds[0]

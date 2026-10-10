@@ -434,7 +434,12 @@ def _wilson_interval(successes, trials, confidence_level):
         )
         / denominator
     )
-    return max(0.0, centre - half_width), min(1.0, centre + half_width)
+    lower = max(0.0, centre - half_width)
+    upper = min(1.0, centre + half_width)
+    # The Wilson interval contains the empirical proportion analytically, but
+    # platform-specific libm rounding can put an endpoint one ulp inside 0 or 1
+    # for the all-failure/all-success cases. Preserve that invariant exactly.
+    return min(lower, probability), max(upper, probability)
 
 
 def _quantile(values, probability):

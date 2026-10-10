@@ -1,5 +1,6 @@
 import unittest
 from dataclasses import replace
+from unittest.mock import patch
 
 from src.credit_robustness import (
     JointRobustnessSpecification, JointRunStatus,
@@ -95,10 +96,12 @@ class CreditRobustnessTest(unittest.TestCase):
         self.assertFalse(result.scenario_summaries[0].observable_policy_robust)
 
     def test_strict_probability_threshold_uses_wilson_lower_bound(self):
-        result = calculate_joint_policy_robustness(
-            with_distributional_pass(evaluation()),
-            specification(success_probability_threshold=.8),
-        )
+        with patch("src.credit_robustness.NormalDist") as normal:
+            normal.return_value.inv_cdf.return_value = 1.9599639845400538
+            result = calculate_joint_policy_robustness(
+                with_distributional_pass(evaluation()),
+                specification(success_probability_threshold=.8),
+            )
         summary = result.scenario_summaries[0]
         self.assertEqual(summary.success_probability, 1)
         self.assertLess(summary.success_probability_ci_lower, .8)
