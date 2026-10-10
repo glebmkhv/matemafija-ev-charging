@@ -33,18 +33,18 @@ Vilnius already has charging infrastructure and public data, but availability is
 
 \section*{Slide 3 --- The solution}
 \speaker{GALINA}{0:52--1:35}
-We built a policy stress-testing digital twin. It turns live charging data into three simple steps: detect sustained scarcity, create a small and capped contribution, and use funded credits to offer drivers a less-crowded alternative. Instead of only saying ``pay more'', MATEMAFIJA asks: can we make the easier choice also the better choice for the network?
+We built a policy stress-testing digital twin. It turns live charging data into three simple steps: detect sustained scarcity, create a small and capped contribution, and use funded credits to offer drivers a less-crowded alternative. Instead of only saying ``pay more'', MATEMAFIJA asks: can a useful alternative for the driver also relieve pressure on the network?
 
 \section*{Slide 4 --- Why it is credible and useful}
 \speaker{GALINA}{1:35--2:25}
-The key is transparency. We know station status, time and tariff from public data. We do not yet know how strongly people will react to a price or a credit, so we let the user vary that response instead of hiding it. A scenario counts as promising only if availability improves, the problem is not pushed to another station, the alternative remains reasonable for the driver, and the credit balance still adds up.
+The key is transparency. We know station status, time and tariff from public data. We do not yet know how strongly people will react to a price or a credit, so we systematically vary possible response strengths instead of hiding the uncertainty. A scenario is promising only if availability improves without moving scarcity elsewhere, while alternatives remain practical and every credit remains funded.
 
 The daily beneficiaries are drivers. Charging operators and the city are the first potential customers of the policy-testing and pilot-design tool. Our headline pilot KPI is simple: reduce qualified zero-availability without increasing scarcity at receiver stations.
 
 \section*{Slide 5 --- Demo: observed evidence}
 \speaker{GLEB}{2:25--3:18}
 \cue{Open Evidence. Show the map, source timestamp and readiness panel.}
-Here is the live evidence layer. These are source records, not a mock dataset. We show the map, current states and real tariff structure, and we keep equipment faults separate from demand-related scarcity. Our collection currently spans just over four days; the formal model requires seven. So the verified effectiveness result remains locked, but the next screen offers a clearly labelled illustrative scenario preview.
+Here is the live evidence layer. These are source records, not a mock dataset. We show the map, current states and real tariff structure, and we keep equipment faults separate from demand-related scarcity. Our collection currently spans just over four days; the formal model requires seven. The formal effectiveness result is therefore not yet available. Instead, the next screen shows an illustrative preview, clearly separated from evidence.
 
 \section*{Slide 6 --- Demo: policy, response and credit flow}
 \speaker{GLEB}{3:18--4:25}
@@ -52,7 +52,7 @@ Here is the live evidence layer. These are source records, not a mock dataset. W
 When scarcity persists, OSA-v1 creates a bounded signal after a fifteen-minute grace period. It is not an actual bill. The Policy view shows how contributions can fund credits for available alternatives. In Response, we vary how likely a driver is to release a busy point or choose another station. These are visible assumptions, not measured Vilnius behaviour.
 
 \cue{Open Robustness. Show the labelled preview and move one response value.}
-This heatmap answers one honest question: how strong would the response need to be before the mechanism becomes interesting? Because the history is not yet qualified, it is labelled illustrative, not evidence and not a forecast. The production model then checks whether scarcity falls without simply moving it elsewhere, and whether every simulated credit remains funded.
+This heatmap answers one honest question: how strong would the response need to be before the mechanism becomes interesting? The preview is based on declared assumptions, not observed effectiveness or a forecast. The production model then checks whether scarcity falls without simply moving it elsewhere, and whether every simulated credit remains funded.
 
 \section*{Slide 7 --- Benefit, business path and ask}
 \speaker{GALINA}{4:25--5:00}
