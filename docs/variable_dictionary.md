@@ -277,10 +277,11 @@ milestone. They do not imply that a real payment or user account exists.
 | `credit_offer_exposure_mcu` | simulated | integer MCU | approved concept, not implemented | Sum of maximum offer per choice opportunity; bounded by the fully funded batch budget. |
 | `origin_price_contribution_rate` | policy_defined | EUR/min | v2 release implemented; accepted-start pending | Effective OSA/adoption price signal used only by origin release and accepted-start response profiles. |
 | `release_credit_offer` | simulated | integer MCU | executable optional v2 release signal; not applicable in initial allocation | Explicitly allocated incentive for a release action; it must not be copied from an alternative-site offer. |
-| `alternative_credit_offer` | simulated | integer MCU | approved contract, not implemented | Immutable funded offer for one opportunity-receiver alternative; used only in receiver choice. |
+| `alternative_credit_offer` | simulated | integer MCU | receiver-choice input implemented; allocation engine pending | Immutable funded offer for one opportunity-receiver alternative; used only in receiver choice. |
 | `response_signal_state` | policy_defined metadata | enum | approved contract, not implemented | `available`, `not_applicable` or `withheld`; neither non-available state may be silently converted to numeric zero. |
-| `receiver_choice_systematic_utility` | simulated | dimensionless | approved contract, not implemented | Separate credit, distance and availability components under assumed beta coefficients; scarcity is the complementary audit/gate variable, not a duplicated utility term. |
-| `receiver_choice_probability` | simulated | probability | approved contract, not implemented | Stable-softmax probability over the immutable receiver set plus an explicit outside/unassigned outcome. |
+| `receiver_choice_systematic_utility` | simulated | dimensionless | implemented | Separate credit, distance and explicitly visible availability components under assumed beta coefficients; scarcity is the complementary audit/gate variable, not a duplicated utility term. |
+| `receiver_choice_probability` | simulated | probability | implemented | Stable-softmax probability over the immutable receiver set plus an explicit outside/unassigned outcome. |
+| `receiver_choice_outcome` | simulated | enum | implemented | `receiver_selected_pending_reservation` or `outside_unassigned`; selection itself moves neither MCU nor receiver capacity. |
 
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in

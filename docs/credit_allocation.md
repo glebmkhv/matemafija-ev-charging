@@ -328,6 +328,7 @@ contract_version_mismatch
 The MVP uses a fully funded worst-case exposure budget, conservative receiver
 offer slots, a 1--25 MCU bounded offer, explicit distance and availability
 components, and deterministic global allocation. It does not embed behavioural
-sensitivity in the policy rule. The generalized typed response contract and its
-release/accepted-start profiles are now implemented. Step 10 may consume these
-immutable funded alternatives in the credit-sensitive receiver-choice layer.
+sensitivity in the policy rule. The generalized typed response contract,
+release/accepted-start profiles and credit-sensitive receiver choice are now
+implemented. Step 11 may connect a selected offer to atomic reservation and the
+append-only simulation ledger.

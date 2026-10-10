@@ -109,5 +109,5 @@ candidate_count
 
 Candidate IDs must be unique. The spatial compatibility adapter now aggregates
 these validated records instead of independently recalculating demand from
-totals. Step 10 will replace probabilistic nearest-first participation with the
-credit-sensitive receiver-choice contract.
+totals. The implemented credit-sensitive receiver-choice contract is documented
+in [`receiver_choice.md`](receiver_choice.md).

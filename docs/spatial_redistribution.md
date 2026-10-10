@@ -25,9 +25,11 @@ not substituted without an explicit reviewed mapping.
 For each already validated displaced-start candidate, the legacy layer applies
 a second seeded Bernoulli participation draw using
 `redistribution_probability`. Non-participants remain
-`unresolved_or_nonparticipating`; they are not called abandoned demand. Step 10
-replaces this coarse second-stage probability with typed credit-sensitive
-receiver choice.
+`unresolved_or_nonparticipating`; they are not called abandoned demand. The new
+typed credit-sensitive receiver choice in
+[`receiver_choice.md`](receiver_choice.md) supersedes this coarse participation
+assumption for the credit-circulation path; the legacy layer remains available
+for compatibility experiments.
 
 Usable destination capacity is conservatively bounded by:
 

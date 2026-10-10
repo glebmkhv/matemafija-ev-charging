@@ -45,6 +45,9 @@ for implementation-level definitions.
   capacity, spatial, tariff, access and compatibility boundaries.
 - [Credit allocation](credit_allocation.md) — funded batch exposure, bounded
   offer amounts, receiver slots and deterministic pair prioritization.
+- [Credit-sensitive receiver choice](receiver_choice.md) — typed funded
+  alternatives, assumed utility components, outside probability and selection
+  pending reservation.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —

@@ -300,5 +300,6 @@ immutable choice sets are defined in
 [`credit_allocation.md`](credit_allocation.md), and their behavioural boundary
 is now fixed in [`response_contract.md`](response_contract.md). Typed release
 and accepted-start profiles plus unit-level redistribution candidates are now
-implemented. The next action is credit-sensitive receiver choice over the
-immutable funded alternatives.
+implemented, together with credit-sensitive receiver choice over immutable
+funded alternatives. The next action is the append-only simulation ledger and
+atomic reservation boundary.
