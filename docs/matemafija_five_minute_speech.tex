@@ -21,7 +21,7 @@
 
 \begin{document}
 \maketitle
-\boxtext{Target: calm delivery, approximately 650 spoken words including demo narration. Cues in brackets are not spoken. Galina owns the story and city/business value; Gleb owns the live evidence and mechanism demo. MCU, contributions and response effects are simulated unless explicitly labelled observed.}
+\boxtext{Target: calm delivery, approximately 600 spoken words including demo narration. Cues in brackets are not spoken. Galina owns the story and city/business value; Gleb owns the live evidence and mechanism demo. MCU, contributions and response effects are simulated unless explicitly labelled observed.}
 
 \section*{Slide 1 --- Team and hook}
 \speaker{GALINA}{0:00--0:18}
@@ -33,7 +33,7 @@ Vilnius already has charging infrastructure and public data, but availability is
 
 \section*{Slide 3 --- The solution}
 \speaker{GALINA}{0:52--1:35}
-We built a policy stress-testing digital twin. It turns live charging data into three simple steps: detect sustained scarcity, create a small and capped contribution, and use funded credits to offer drivers a less-crowded alternative. Instead of only saying ``pay more'', MATEMAFIJA asks: can a useful alternative for the driver also relieve pressure on the network?
+We built a policy stress-testing digital twin. It turns live charging data into three simple steps: detect sustained scarcity, create a small and capped contribution, and use funded credits to offer drivers a less-crowded alternative. Instead of only adding a surcharge, MATEMAFIJA uses funded credit offers to guide drivers toward available charging points.
 
 \section*{Slide 4 --- Why it is credible and useful}
 \speaker{GALINA}{1:35--2:25}
@@ -52,7 +52,7 @@ Here is the live evidence layer. These are source records, not a mock dataset. W
 When scarcity persists, OSA-v1 creates a bounded signal after a fifteen-minute grace period. It is not an actual bill. The Policy view shows how contributions can fund credits for available alternatives. In Response, we vary how likely a driver is to release a busy point or choose another station. These are visible assumptions, not measured Vilnius behaviour.
 
 \cue{Open Robustness. Show the labelled preview and move one response value.}
-This heatmap answers one honest question: how strong would the response need to be before the mechanism becomes interesting? The preview is based on declared assumptions, not observed effectiveness or a forecast. The production model then checks whether scarcity falls without simply moving it elsewhere, and whether every simulated credit remains funded.
+This heatmap shows how the mechanism changes under weak, moderate and strong response assumptions. It does not claim a measured Vilnius effect; it identifies the response threshold that a pilot must test. The production model then checks whether scarcity falls without simply moving it elsewhere, and whether every simulated credit remains funded.
 
 \section*{Slide 7 --- Benefit, business path and ask}
 \speaker{GALINA}{4:25--5:00}
