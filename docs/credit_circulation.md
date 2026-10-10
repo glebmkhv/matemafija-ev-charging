@@ -1,12 +1,13 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.17; implemented core with
+Status: **approved product and research contract v0.18; implemented core with
 explicit eligibility/allocation and real-settlement boundaries**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
 which concepts remain assumptions or future pilot requirements. It does not
-assert that credits, cashback or settlement are already implemented.
+assert that real-world credits, cashback or settlement are already deployed.
+MCU circulation exists only as a simulated, reconciled accounting mechanism.
 
 ## 1. Product thesis
 
@@ -253,16 +254,18 @@ The approved sequence for the first PLAN milestone is:
     [`credit_robustness.md`](credit_robustness.md)**;
 16. Policy Lab flow -- **implemented in [`policy_lab.md`](policy_lab.md)**;
 17. README and public documentation alignment -- **complete**;
-18. tests, reconciliation and final acceptance audit.
+18. tests, reconciliation and final acceptance audit -- **complete in
+    [`final_acceptance_audit.md`](final_acceptance_audit.md)**.
 
 Future work may refine a formula but must not weaken the claim boundary or
 provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--17 are complete. The read-only Policy Lab follows the complete
+Steps 1--18 are complete. The read-only Policy Lab follows the complete
 evidence → policy → assumed response → paired simulation → four-domain
 evaluation → decision path, retains readiness locks and explicitly separates
 MCU from DAEI. README, pitch narrative, guide source and public documentation
-now use the same architecture and claim language. The next action is the final
-tests, reconciliation and acceptance audit.
+use the same architecture and claim language. The repository-wide acceptance
+audit verifies tests, public-repository hygiene, links and claim consistency.
+Operational data-readiness and pilot-validation gates remain intentionally open.

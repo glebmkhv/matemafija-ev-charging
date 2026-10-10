@@ -228,6 +228,9 @@ data/raw/
 # Generated experiment results
 outputs/
 
+# Local render and inspection intermediates
+tmp/
+
 # Generated artifacts, except the public project guide
 output/*
 !output/pdf/

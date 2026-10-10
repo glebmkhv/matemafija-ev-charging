@@ -153,6 +153,7 @@ not invent queues, idle time, congestion scores or causal effects.
 - [Variable and provenance contract](docs/variable_dictionary.md)
 - [Common simulator contract](docs/simulator_contract.md)
 - [Data and modelling assumptions](docs/assumptions.md)
+- [Final acceptance audit](docs/final_acceptance_audit.md)
 
 The guide is the concise, jury-facing description of the same architecture.
 The Markdown documents are the normative technical specifications.
@@ -193,6 +194,10 @@ It does not prove queue reduction, waiting-time reduction, individual welfare,
 demographic fairness or a causal real-world effect. `pilot_ready` remains false.
 Those claims require a controlled pilot, Session/CDR and route/user evidence,
 operator agreements and a validated behavioural model.
+
+The repository has passed its documented public-demo acceptance audit. This
+means that the implementation, contracts, interface and claim language agree;
+it does not promote a scenario-conditional result to real-world validation.
 
 ## Data and security
 
