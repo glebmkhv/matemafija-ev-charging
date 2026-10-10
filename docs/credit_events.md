@@ -1,6 +1,6 @@
 # Credit-circulation participants and event contract
 
-Status: **approved design contract v0.3; implementation pending**.
+Status: **approved contract v0.4; core append-only event lifecycle implemented**.
 
 This document completes step 2 of the credit-circulation implementation plan.
 It defines logical participants, event identities, lifecycle transitions and
@@ -290,10 +290,11 @@ it proves internal accounting consistency, not legal settlement correctness.
 
 This contract completes step 2 when all subsequent modules use these role and
 event names or introduce a versioned amendment. Step 3 has now fixed amounts,
-units and lifecycle timing in [`credit_units.md`](credit_units.md). Python event
-classes remain deferred until the receiver and allocation contracts determine
-the remaining required fields. Contribution accrual, pool reserves, reversals
-and optional subsidy are now defined in [`credit_pool.md`](credit_pool.md). The
+units and lifecycle timing in [`credit_units.md`](credit_units.md). The core
+Python event envelope, replay and lifecycle state machines are implemented in
+[`simulation_ledger.md`](simulation_ledger.md). Contribution accrual, pool
+reserves, reversals and optional subsidy are defined in
+[`credit_pool.md`](credit_pool.md). The
 receiver evaluation states, gates and reason codes are defined in
 [`receiver_eligibility.md`](receiver_eligibility.md). Allocation amounts and
 immutable choice sets are defined in
@@ -301,5 +302,5 @@ immutable choice sets are defined in
 is now fixed in [`response_contract.md`](response_contract.md). Typed release
 and accepted-start profiles plus unit-level redistribution candidates are now
 implemented, together with credit-sensitive receiver choice over immutable
-funded alternatives. The next action is the append-only simulation ledger and
-atomic reservation boundary.
+funded alternatives and an append-only atomic ledger. The next action is
+fairness and safety guardrails.

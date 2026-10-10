@@ -117,8 +117,9 @@ outside_unassigned
 
 The selected result records offer, receiver and MCU amount, but explicitly sets
 `reservation_required = true`. It creates no ledger movement and consumes no
-receiver capacity. Step 11 must atomically recheck offer expiry, capacity and
-pool balance before emitting reservation and later issuance events.
+receiver capacity. The implemented ledger atomically rechecks offer expiry,
+capacity and pool balance before emitting reservation and later issuance
+events.
 
 Outside/unassigned contains no offer, receiver or MCU and requires no
 reservation. It is not automatically interpreted as refusal, abandonment or
@@ -145,5 +146,6 @@ transparent, normalized choice mechanism with an explicit outside outcome.
 Choice remains strictly downstream of origin response and funded allocation,
 and strictly upstream of reservation, issuance and receiver-state mutation.
 
-Step 11 may now implement the append-only simulation ledger and atomic
-reservation boundary without changing the behavioural model.
+The append-only simulation ledger and atomic reservation boundary are now
+implemented without changing the behavioural model. Step 12 may add fairness
+and safety guards.

@@ -48,6 +48,8 @@ for implementation-level definitions.
 - [Credit-sensitive receiver choice](receiver_choice.md) — typed funded
   alternatives, assumed utility components, outside probability and selection
   pending reservation.
+- [Append-only simulation ledger](simulation_ledger.md) — event replay, MCU
+  conservation, receiver capacity and atomic two-resource reservation.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —

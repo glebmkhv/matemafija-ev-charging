@@ -1,6 +1,6 @@
 # Mobility-credit unit and lifecycle contract
 
-Status: **approved design contract v0.1; implementation pending**.
+Status: **approved contract v0.2; integer MCU ledger lifecycle implemented**.
 
 This document completes step 3 of the credit-circulation implementation plan.
 It fixes the scenario accounting unit, numeric representation, rounding,

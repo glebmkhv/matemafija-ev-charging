@@ -1,6 +1,6 @@
 # Contribution-pool and solvency contract
 
-Status: **approved design contract v0.1; implementation pending**.
+Status: **approved contract v0.2; core pool buckets and reserve replay implemented**.
 
 This document completes step 4 of the credit-circulation implementation plan.
 It defines contribution calculation, accrual timing, pool buckets, reserves,

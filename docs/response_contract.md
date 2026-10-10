@@ -296,4 +296,5 @@ The executable release response supports the v2 price plus optional
 release-credit profile. Typed accepted-start processing now emits conserved,
 unit-level redistribution candidates from paired draws. Credit-sensitive
 receiver choice is now implemented over immutable funded alternatives. Step 11
-may implement append-only ledger and atomic reservation events.
+has also implemented append-only ledger and atomic reservation events; step 12
+may add fairness and safety guards.

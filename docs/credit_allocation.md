@@ -330,5 +330,5 @@ offer slots, a 1--25 MCU bounded offer, explicit distance and availability
 components, and deterministic global allocation. It does not embed behavioural
 sensitivity in the policy rule. The generalized typed response contract,
 release/accepted-start profiles and credit-sensitive receiver choice are now
-implemented. Step 11 may connect a selected offer to atomic reservation and the
-append-only simulation ledger.
+implemented. Selected offers now connect to atomic reservation and the
+append-only simulation ledger. Step 12 may add fairness and safety guards.
