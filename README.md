@@ -3,10 +3,11 @@
 **A policy stress-testing digital twin for Vilnius EV charging infrastructure.**
 
 MATEMAFIJA turns public OCPI and DATEX II observations into an auditable model
-of charging-capacity availability. It replays the observed tariff, applies a
-small and transparent adaptive adjustment, and tests the policy across explicit
-behavioural assumptions. The result is a robustness map and a measurable pilot
-threshold—not a claim that an untested price is already proven to work.
+of charging-capacity availability. It replays the observed tariff and tests a
+balanced contribution-to-credit policy: qualified scarcity can create a bounded
+signal, while already funded mobility-credit units (MCU) support safer
+alternative-site choices. The result is a joint robustness map and a measurable
+pilot design—not a claim that an untested policy is already proven to work.
 
 Built for **Hack4Vilnius, Challenge 13**.
 
@@ -14,9 +15,10 @@ Built for **Hack4Vilnius, Challenge 13**.
 
 The decision question is:
 
-> How strong would the user response to adaptive pricing need to be before the
-> policy robustly improves observable charging-capacity scarcity, and what
-> access or spatial trade-offs could offset that benefit?
+> Under which declared price, credit, delay and spatial-choice response
+> assumptions can a budget-constrained contribution-to-credit policy improve
+> observable charging scarcity without suppressing accepted use, transferring
+> scarcity to receiver sites or breaking access and accounting safeguards?
 
 The current public feeds do **not** observe a physical queue, individual waiting
 time, charge-completion time, or post-charge idle time. The project therefore
@@ -38,22 +40,32 @@ flowchart TD
     B --> C[State reconstruction<br/>intervals, flows and historical series]
     C --> D[Scarcity metrics and derivative statistics]
     D --> E[F1 observed tariff replay<br/>empirical transitions and baseline paths]
-    E --> F[OSA-v1 adjustment<br/>intensity, coverage and rollout]
-    F --> G[Explicit response assumptions<br/>release, accepted-start and delay]
-    G --> H[Paired Monte Carlo<br/>same path and random numbers]
-    H --> I[Same scarcity metrics<br/>robustness, threshold and guardrails]
+    E --> F[OSA-v1 scarcity signal<br/>intensity, coverage and rollout]
+    F --> G[Contribution pool + funded MCU offers<br/>reserve, choice and safety]
+    G --> H[Explicit response assumptions<br/>release, accepted-start, credit and distance]
+    H --> I[Paired Monte Carlo + ledger<br/>same path and random numbers]
+    I --> J[Four-domain evaluation<br/>system, redistribution, user proxy, accounting]
+    J --> K[Joint observable robustness<br/>Wilson bound and pilot thresholds]
 ```
 
-### Pricing and response model
+### Policy and response model
 
 - **F1** replays the component-structured tariff supplied through OCPI.
 - **OSA-v1** is a bounded TIME-component adjustment driven only by qualified,
   sustained observable capacity pressure.
+- **MCU circulation** converts prior simulated funding into bounded alternative-
+  site offers; offer, reservation, issuance and redemption remain distinct.
 - `lambda` controls adjustment intensity; coverage and rollout are separate.
-- The release and accepted-start channels are scenario assumptions, not learned
-  Vilnius elasticities.
+- Release, accepted-start and receiver-choice sensitivities are scenario
+  assumptions, not learned Vilnius elasticities.
 - Fixed and adaptive arms use the same baseline path, eligibility mask, random
   numbers and evaluation metrics.
+- Joint success requires system, redistribution, observable user-proxy and
+  accounting gates; missing evidence is `not_evaluable`, never success.
+
+MCU is a simulated policy accounting unit. It is not legal tender, a deployed
+cashback balance or DAEI. DAEI is documented only as Lithuanian precedent and a
+possible future integration path.
 
 The simulator exposes three deliberately separate modes:
 `observed_replay`, `assumption_driven_counterfactual`, and the future
@@ -164,21 +176,23 @@ Run the complete test suite:
 python -m unittest discover -s tests -v
 ```
 
-The current suite contains 100 tests covering persistence, timestamp handling,
+The current suite contains 155 tests covering persistence, timestamp handling,
 state reconstruction, scarcity, tariffs, policies, trajectories, response
-channels, paired simulation, robustness, redistribution and Policy Lab logic.
+channels, MCU lifecycle and ledger reconciliation, paired credit simulation,
+four-domain evaluation, joint robustness and Policy Lab logic.
 
 ## Claim boundary
 
 The defensible result is conditional:
 
 > Under declared response assumptions, the model identifies the parameter
-> region where adaptive pricing robustly improves observable scarcity.
+> region where the contribution-to-credit policy is robust within the current
+> observable system, redistribution, user-proxy and accounting boundaries.
 
-It does not prove queue reduction, waiting-time reduction, welfare improvement
-or a causal real-world effect. Those claims require a controlled pilot or a
-validated behavioural model. The recommended next step is continued collection
-followed by a bounded, instrumented rollout with Session/CDR evidence.
+It does not prove queue reduction, waiting-time reduction, individual welfare,
+demographic fairness or a causal real-world effect. `pilot_ready` remains false.
+Those claims require a controlled pilot, Session/CDR and route/user evidence,
+operator agreements and a validated behavioural model.
 
 ## Data and security
 

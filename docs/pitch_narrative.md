@@ -4,8 +4,9 @@
 
 **Matemafija is a policy stress-testing digital twin for Vilnius EV charging
 infrastructure.** It does not sell an unvalidated fee formula as a prediction.
-It shows when an adaptive policy would work, how strong user response would
-need to be, and which access or spatial trade-offs could offset the benefit.
+It shows when a balanced contribution-to-credit policy could work, how strong
+price and credit responses would need to be, and which access, spatial or
+accounting trade-offs could offset the benefit.
 
 ## Three-minute story
 
@@ -25,12 +26,13 @@ The database already contains a large descriptive baseline, but the formal
 seven-day transition gate must still be satisfied before publishing scenario
 effectiveness results.
 
-### 3. The adaptive policy — 30 seconds
+### 3. The balanced policy — 35 seconds
 
 OSA-v1 adds a bounded, transparent TIME adjustment only when qualified,
 sustained observable scarcity exists. It never uses an invented physical queue
-or unobserved post-charge idle time. `lambda` controls price intensity; rollout
-and coverage remain separate variables.
+or unobserved post-charge idle time. Prior simulated contributions can fund MCU
+offers at qualified less-scarce alternatives. Offer, reservation, issuance and
+redemption are separate; MCU is not money, deployed cashback or DAEI.
 
 ### 4. The digital twin — 50 seconds
 
@@ -40,44 +42,46 @@ assumptions:
 - how price changes `charging -> available` release probability;
 - how price changes the accepted `available -> charging` start proxy;
 - how delayed that response is;
-- how much of displaced use may move to nearby stations.
+- how credit and straight-line distance affect receiver choice;
+- how receiver capacity, pool reserve and safety gates constrain circulation.
 
 Fixed and adaptive arms share the same baseline path and random numbers and are
 evaluated with exactly the same scarcity definitions.
 
 ### 5. The decision output — 25 seconds
 
-The output is not one optimistic forecast. It is a robustness map over
-`lambda × theta_release × theta_arrival × delay`. A cell is robust only when
-the lower 95% Wilson bound for improvement probability is at least 80%. The
-model identifies the minimum tested response threshold and simultaneously
-reports displaced accepted starts and scarcity transferred to receiving sites.
+The output is not one optimistic forecast or one composite score. Every run
+reports system, redistribution, user-proxy and accounting domains. A scenario
+is `observable_policy_robust` only when all gates pass together, at least 20
+valid replications exist, no more than 20% are non-evaluable, and the lower 95%
+Wilson bound for joint success is at least 80%.
 
 ### 6. The ask — 15 seconds
 
-Continue collection, select a small group of qualified pilot sites, deploy a
-bounded OSA-v1 test, measure sessions and displaced use, and replace assumptions
-with Vilnius evidence. The city receives a falsifiable pilot design rather than
-a promise.
+Continue collection, agree operator/funding roles, select qualified pilot
+sites, test bounded contribution and credit rules, measure sessions, choices,
+redemption and displaced use, and replace assumptions with Vilnius evidence.
+The city receives a falsifiable pilot design rather than a promise.
 
 ## Recommended demo sequence
 
 1. Open the Evidence tab and show the live station map, tariff structure and
    readiness gate.
-2. Open Mechanism and move `lambda`, `theta_release` and `theta_arrival` to
-   demonstrate identity at zero and opposite response directions.
-3. Open Robustness and explain why the effectiveness heatmap remains locked
+2. Open Policy and explain origin signal → MCU pool → funded alternative.
+3. Open Response and move price, credit and distance sensitivities while naming
+   them as assumptions.
+4. Open Evaluation and show why four domains remain separate.
+5. Open Robustness and explain why the effectiveness heatmap remains locked
    until data gates pass.
-4. Explain the future heatmap, minimum tested threshold and displaced-demand
-   guardrail.
-5. Finish on Decision narrative and the bounded pilot proposal.
+6. Finish on Decision, the bounded pilot proposal and DAEI separation.
 
 ## Claim discipline
 
 Say:
 
 > Under explicitly declared response assumptions, the model identifies the
-> parameter region where adaptive pricing robustly improves observable scarcity.
+> parameter region where a contribution-to-credit policy is jointly robust
+> within observable system, redistribution, user-proxy and accounting limits.
 
 Do not say:
 
@@ -91,5 +95,8 @@ Do not say:
 - useful under limited behavioural data;
 - honest about uncertainty and causal limits;
 - converts uncertainty into a measurable pilot threshold;
-- exposes access and network spillover instead of optimizing a single metric.
+- exposes access, network and accounting trade-offs instead of optimizing a
+  single metric;
+- connects scarcity intervention to balanced MCU circulation while keeping
+  DAEI as a clearly separated future pathway.
 

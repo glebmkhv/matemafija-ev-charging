@@ -1,6 +1,7 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.16; implementation pending**.
+Status: **approved product and research contract v0.17; implemented core with
+explicit eligibility/allocation and real-settlement boundaries**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -251,16 +252,17 @@ The approved sequence for the first PLAN milestone is:
 15. joint policy-robustness criterion -- **implemented in
     [`credit_robustness.md`](credit_robustness.md)**;
 16. Policy Lab flow -- **implemented in [`policy_lab.md`](policy_lab.md)**;
-17. README and public documentation alignment;
+17. README and public documentation alignment -- **complete**;
 18. tests, reconciliation and final acceptance audit.
 
-Later steps may refine a formula but must not weaken the claim boundary or
+Future work may refine a formula but must not weaken the claim boundary or
 provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--16 are complete. The read-only Policy Lab now follows the complete
+Steps 1--17 are complete. The read-only Policy Lab follows the complete
 evidence → policy → assumed response → paired simulation → four-domain
 evaluation → decision path, retains readiness locks and explicitly separates
-MCU from DAEI. The next action is repository-wide README and public
-documentation alignment.
+MCU from DAEI. README, pitch narrative, guide source and public documentation
+now use the same architecture and claim language. The next action is the final
+tests, reconciliation and acceptance audit.

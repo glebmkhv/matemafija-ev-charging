@@ -91,4 +91,5 @@ The project now has a conservative joint robustness region that preserves
 domain failures and missing evidence rather than hiding them in a composite
 score. The implemented [Policy Lab](policy_lab.md) now exposes this structure
 through explanatory controls, domain cards, gate logic and explicit validation
-boundaries. Step 17 may align the remaining public documentation.
+boundaries. The public README, guide and pitch narrative now use the same
+four-domain decision language.

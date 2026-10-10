@@ -114,8 +114,9 @@ are evaluated with the same snapshot-level scarcity definitions in
 [`simulation_evaluation.md`](simulation_evaluation.md). The step-13
 [`credit_simulation_grid.md`](credit_simulation_grid.md) extension now carries
 redistribution candidates through receiver choice, safety and ledger replay.
-Step 14 will evaluate system, redistribution, user-proxy and accounting
-outcomes jointly.
+The four-domain evaluator and joint observable robustness criterion now assess
+system, redistribution, user-proxy and accounting outcomes without collapsing
+their trade-offs.
 
 ## 6. Claim boundary
 

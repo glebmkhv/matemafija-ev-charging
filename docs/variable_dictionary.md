@@ -397,11 +397,10 @@ The simulator boundary, including the non-causal observed-replay mode and the
 requirements for any future counterfactual mode, is defined in
 `docs/simulator_contract.md`.
 
-## 12. Decisions reserved for credit-circulation implementation
+## 12. Credit-circulation implementation state
 
 The existing F1, OSA-v1, readiness, transition and scarcity contracts remain
-unchanged. The following credit-layer decisions are intentionally deferred to
-their ordered design steps:
+unchanged. The ordered design work has fixed:
 
 1. participant roles and allowed event transitions;
 2. accounting-unit denomination and lifecycle;
@@ -409,6 +408,12 @@ their ordered design steps:
 4. receiver eligibility and allocation weights;
 5. normalization and units for multidimensional response drivers;
 6. credit-sensitive spatial-choice model;
-7. fairness thresholds and the joint `policy_robust` criterion;
+7. fairness proxy thresholds and the joint `observable_policy_robust` criterion;
 8. evidence required to move from simulated ledger events to real settlement;
-9. the outcome of the separate DAEI integration review.
+9. DAEI separation from the current computation graph.
+
+Typed response, choice, ledger, safety, downstream grid, four-domain evaluation
+and joint robustness are implemented. Receiver eligibility and global offer
+allocation remain approved design contracts and explicit funded-offer inputs;
+real settlement remains unavailable pending identity, billing, operator and
+legal evidence.

@@ -80,5 +80,5 @@ legal or technical equivalence.
 
 The Policy Lab now tells the complete credit-circulation story in the same
 order as the implemented contracts and preserves readiness locks and claim
-boundaries. Step 17 may align the remaining public README, guide-facing links
-and repository documentation with this final interface narrative.
+boundaries. The public README, guide-facing links and repository documentation
+now follow this final interface narrative.

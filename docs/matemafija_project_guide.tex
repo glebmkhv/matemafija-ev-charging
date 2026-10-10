@@ -21,11 +21,11 @@
 \newcommand{\boxtext}[1]{\vspace{2mm}\noindent\fcolorbox{teal}{pale}{\parbox{0.94\linewidth}{#1}}\vspace{2mm}}
 \title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]\Large Полный guide по проекту и защите\\[2mm]\large Hack4Vilnius EV Charging Policy Lab}
 \author{Командный учебный документ}
-\date{Версия 1.0 --- 8 октября 2026}
+\date{Версия 2.0 --- 10 октября 2026}
 
 \begin{document}
 \maketitle
-\boxtext{\textbf{Главная мысль проекта.} MATEMAFIJA --- это не обещание, что новая цена обязательно устранит дефицит. Это \textbf{policy stress-testing digital twin}: инструмент, который на реальных OCPI/DATEX данных показывает, при каких явно заданных предположениях адаптивная цена улучшает наблюдаемые метрики доступности, какие побочные эффекты возникают и какой пилот нужен городу для проверки предположений.}
+\boxtext{\textbf{Главная мысль проекта.} MATEMAFIJA --- это не обещание, что новая цена или credit обязательно устранит дефицит. Это \textbf{policy stress-testing digital twin}: инструмент, который на реальных OCPI/DATEX данных показывает, при каких явно заданных price-and-credit response assumptions balanced contribution-to-credit policy проходит system, redistribution, user-proxy и accounting gates, и какой пилот нужен городу для проверки предположений.}
 \tableofcontents
 \newpage
 
@@ -39,10 +39,10 @@
 Зарядная инфраструктура может периодически иметь нулевую доступность. Но в имеющихся данных нет физической очереди, времени ожидания, момента окончания зарядки или времени, когда водитель остаётся после окончания. Новая политика ещё не внедрялась, поэтому её реальный поведенческий эффект тоже неизвестен.
 
 \subsection{Что мы сделали}
-Мы организовали реальные OCPI и DATEX наблюдения, исправили временную семантику, восстановили интервалы состояний EVSE, построили time series и метрики scarcity, воспроизвели фактический OCPI тариф F1, определили простую OSA-v1 адаптивную добавку и создали симулятор условных реакций. Fixed и adaptive сценарии получают один baseline и одинаковые случайные числа. Результат --- карта устойчивости, а не единичный оптимистичный forecast.
+Мы организовали реальные OCPI и DATEX наблюдения, исправили временную семантику, восстановили интервалы состояний EVSE, построили time series и метрики scarcity, воспроизвели фактический OCPI тариф F1 и определили OSA-v1 scarcity signal. Поверх него спроектирован balanced contribution-to-credit mechanism: prior funded MCU поддерживают выбор qualified receiver sites. Fixed и adaptive сценарии получают один baseline и одинаковые случайные числа; результат --- joint observable robustness map, а не единичный оптимистичный forecast.
 
 \subsection{Что получает город}
-Город получает ответ не «какую цену немедленно поставить», а: \emph{насколько сильной должна быть реакция пользователей, чтобы политика приносила устойчивое улучшение; каков риск подавления/переноса спроса; и как спроектировать ограниченный измеримый пилот}.
+Город получает ответ не «какую цену или награду немедленно поставить», а: \emph{при каких price-and-credit response assumptions политика проходит system, redistribution, user-proxy и accounting gates; и как спроектировать ограниченный измеримый пилот}.
 
 \section{Архитектура целиком}
 \begin{center}
@@ -51,15 +51,15 @@
 \node[b,below=of raw] (db) {SQLite v2: source-native records, snapshots, relationships, provenance};
 \node[b,below=of db] (state) {Reconstruction: state intervals $\rightarrow$ flow/historical series $\rightarrow$ scarcity and derivative statistics};
 \node[b,below=of state] (base) {Baseline: F1 observed tariff replay + empirical transition hazards + observed/bootstrap path};
-\node[b,below=of base] (policy) {OSA-v1 adjustment $\Delta p$ + intensity $\lambda$ + coverage $\kappa$ + rollout $R_i(t)$};
-\node[b,below=of policy] (resp) {Assumed response: release $\theta_r$, accepted-start $\theta_a$, delay $\tau$};
-\node[b,below=of resp] (sim) {Paired Monte Carlo: fixed/adaptive use the same path and random numbers};
-\node[b,below=of sim] (out) {Same scarcity metrics $\rightarrow$ robustness region, threshold, displaced demand, spatial spillover};
+\node[b,below=of base] (policy) {OSA-v1 signal + contribution pool + funded MCU alternatives};
+\node[b,below=of policy] (resp) {Assumed response: release, accepted-start, credit/distance choice, delay};
+\node[b,below=of resp] (sim) {Paired Monte Carlo + safety + append-only MCU/capacity ledger};
+\node[b,below=of sim] (out) {System + redistribution + user-proxy + accounting $\rightarrow$ joint observable robustness};
 \foreach \a/\b in {raw/db,db/state,state/base,base/policy,policy/resp,resp/sim,sim/out} \draw[arr] (\a)--(\b);
 \end{tikzpicture}
 \end{center}
 
-\textbf{Логика сообщений между блоками:} raw data сообщает факты; reconstruction сообщает допустимые признаки; policy сообщает ценовой сигнал; response model сообщает условный механизм поведения; simulator сообщает возможное состояние; evaluation сообщает сравнимые метрики. Ни один блок не должен переименовывать допущение в наблюдение.
+\textbf{Логика сообщений между блоками:} raw data сообщает факты; reconstruction сообщает допустимые признаки; policy сообщает scarcity signal и MCU rules; response model сообщает условный механизм поведения; simulator сообщает возможное состояние и ledger events; evaluation сообщает раздельные domain metrics. Ни один блок не должен переименовывать допущение в наблюдение.
 
 \section{Данные и происхождение переменных}
 \begin{tabularx}{\textwidth}{>{\bfseries}p{2.6cm}X p{4.0cm}}
@@ -68,7 +68,7 @@ observed & непосредственно получено от источник
 reconstructed & детерминированно восстановлено из наблюдений & interval, availability ratio, sustained duration \\
 estimated & статистически оценено при выполнении quality gate & empirical transition hazard \\
 policy-defined & нормативный параметр решения & grace=15 min, cap=0.05 EUR/min \\
-assumed & неизвестная гипотеза сценария & $\theta_r,\theta_a,\tau$, redistribution probability \\
+assumed & неизвестная гипотеза сценария & price/credit sensitivities, delay, receiver choice \\
 simulated & результат модели, не реальный факт & counterfactual EVSE counts \\
 \bottomrule
 \end{tabularx}
@@ -103,6 +103,8 @@ common random numbers & одинаковые случайные числа в pa
 Wilson interval & устойчивый доверительный интервал для доли успешных replications.\\
 robustness region & область assumptions, где нижняя граница вероятности улучшения проходит порог.\\
 spatial spillover & scarcity, перенесённая на соседние stations из-за displaced use.\\
+MCU & integer mobility-credit unit для scenario accounting; не money и не DAEI.\\
+observable policy robust & joint system/redistribution/user-proxy/accounting success в пределах доступных evidence.\\
 \bottomrule
 \end{longtable}
 
@@ -173,8 +175,8 @@ h^{start}_{1}=h^{start}_{0}\exp\{-\theta_a d_i(t-\tau)\}.
 
 $\theta_r,\theta_a,\tau$ имеют provenance \code{assumed}. При нулевом driver adaptive arm обязан совпасть с fixed arm (identity test).
 
-\section{Simulation, evaluation и robustness}
-Grid варьирует $\lambda\times\theta_r\times\theta_a\times\tau$ и выполняет paired replications. Fixed/adaptive получают один trajectory и common random numbers. One-step projection:
+\section{Simulation, MCU circulation, evaluation и robustness}
+Upstream grid варьирует $\lambda\times\theta_r\times\theta_a\times\tau$; downstream grid добавляет credit/distance sensitivities, reserve и residual receiver capacity. Fixed/adaptive получают один trajectory и common random numbers. Funded offers проходят safety, choice, atomic MCU/capacity reservation и append-only ledger replay. One-step origin projection:
 \[
 A'=A+\text{releases}-\text{starts},\qquad C'=C-\text{releases}+\text{starts}.
 \]
@@ -182,12 +184,12 @@ A'=A+\text{releases}-\text{starts},\qquad C'=C-\text{releases}+\text{starts}.
 
 Для каждой метрики считается $\Delta M=M_{adaptive}-M_{fixed}$. Для zero-availability и scarcity отрицательное значение хорошо; для availability --- положительное.
 
-Пусть $p$ --- доля replications с улучшением. Scenario считается robust, когда нижняя 95\% Wilson bound не меньше 0.80 и имеется минимум 20 valid replications. Minimum response threshold --- минимальное \emph{протестированное} $\theta_r$ при фиксированных $\lambda,\theta_a,\tau$, прошедшее правило. Это grid threshold, не оценённая elasticity.
+Каждый run оценивается отдельно по system, redistribution, user-proxy и accounting domains. Joint run success требует прохождения всех четырёх gates; missing evidence остаётся \code{not\_evaluable}. Scenario получает \code{observable\_policy\_robust} только при минимум 20 valid replications, доле non-evaluable не более 0.20 и нижней 95\% Wilson bound joint success не меньше 0.80. Это не validated welfare/fairness и не pilot readiness.
 
 \section{Spatial redistribution}
 Displaced starts не исчезают автоматически. Пространственный модуль распределяет только их proxy между nearby receivers при assumed redistribution probability, straight-line distance limit и receiver capacity fraction. Алгоритм seeded, integer, nearest-first, без overbooking; выполняется conservation: allocated + unassigned = candidates.
 
-Обязательно показываются unassigned demand и receiver zero-availability created. Road travel time, connector compatibility, preferences и реальный choice пока не моделируются; spatial block ещё не встроен в основной robustness criterion.
+Обязательно показываются outside/unassigned outcomes, receiver capacity, residual-capacity blocks и ledger reconciliation. Road travel time, individual compatibility, welfare и demographic fairness остаются not evaluable; их нельзя подменять straight-line distance или MCU.
 
 \section{Карта репозитория}
 \begin{longtable}{p{5.3cm}p{10.7cm}}
@@ -206,11 +208,15 @@ Displaced starts не исчезают автоматически. Простр�
 \code{src/release\_response.py}, \code{arrival\_response.py} & behavioural assumptions.\\
 \code{src/simulation\_grid.py} & paired Monte Carlo runner.\\
 \code{src/simulation\_evaluation.py}, \code{robustness.py} & metrics, Wilson region, thresholds.\\
+\code{src/receiver\_choice.py}, \code{simulation\_ledger.py} & credit-sensitive choice и append-only MCU lifecycle.\\
+\code{src/fairness\_safety.py} & pre-reservation guards и distributional proxy audit.\\
+\code{src/credit\_simulation\_grid.py} & downstream paired credit/choice/ledger grid.\\
+\code{src/credit\_simulation\_evaluation.py}, \code{credit\_robustness.py} & four-domain evaluation и joint observable robustness.\\
 \code{src/spatial\_redistribution.py} & network spillover prototype.\\
 \code{src/dashboard.py} & raw evidence dashboard.\\
 \code{src/policy\_dashboard.py}, \code{policy\_lab.py} & Policy Lab UI.\\
 \code{docs/} & формальные contracts и claim boundaries.\\
-\code{tests/} & 100 automated tests на текущем состоянии.\\
+\code{tests/} & 155 automated tests на текущем состоянии.\\
 \bottomrule
 \end{longtable}
 
@@ -224,17 +230,18 @@ python -m unittest discover -s tests -v
 \end{verbatim}
 
 \section{Что уже есть и чего ещё нет}
-\textbf{Есть:} нормализованная БД, timezone rules, intervals/time series, scarcity и derivative statistics, readiness gates, F1, OSA-v1, formal simulator contract, transition/trajectory machinery, release + arrival response, paired grid, evaluation/robustness, spatial prototype, Policy Lab, tests.
+\textbf{Есть:} нормализованная БД, timezone rules, intervals/time series, scarcity и derivative statistics, readiness gates, F1, OSA-v1, typed response, receiver choice, MCU ledger, safety guards, paired upstream/downstream grids, four-domain evaluation, joint observable robustness и six-tab Policy Lab.
 
-\textbf{Ещё нет как доказанного результата:} 7+ дней qualified history в текущем snapshot; фактической elasticity водителей; observed queue/waiting/post-charge idle; causal proof; Session/CDR totals; validated redistribution choice; production pricing deployment. Эти пункты --- не провал, а честная граница MVP и программа пилота.
+\textbf{Ещё нет как доказанного результата:} фактической elasticity водителей; observed queue/waiting/post-charge idle; causal proof; Session/CDR totals; road travel time; validated welfare/fairness; operator settlement; production deployment. Receiver eligibility и global offer allocation остаются approved design contracts и explicit inputs. Эти пункты --- честная граница MVP и программа пилота.
 
 \section{Как проводить demo}
 \begin{enumerate}
 \item \textbf{Evidence:} покажите карту, реальные состояния, tariff structure и readiness gate. Скажите, что большое число строк не заменяет календарную длительность.
-\item \textbf{Mechanism:} покажите F1, OSA signal, cap и sliders $\lambda,\theta_r,\theta_a,\tau$. При нулях продемонстрируйте identity.
-\item \textbf{Robustness:} объясните будущую heatmap и почему сейчас lock является знаком научной честности.
-\item \textbf{Trade-off:} покажите displaced starts и spatial spillover guardrail.
-\item \textbf{Decision:} завершите bounded pilot: qualified sites, контроль, session/CDR, outcome и stop criteria.
+\item \textbf{Policy:} покажите origin signal $\rightarrow$ MCU pool $\rightarrow$ funded receiver offer; отделите offer от issuance.
+\item \textbf{Response:} покажите price, credit и distance sensitivities как assumptions.
+\item \textbf{Evaluation:} покажите четыре domain cards и not-evaluable boundaries.
+\item \textbf{Robustness:} объясните conjunctive gates, Wilson rule и readiness lock.
+\item \textbf{Decision:} завершите bounded pilot и поясните, что DAEI --- future pathway, не текущий MCU.
 \end{enumerate}
 Никогда не тратьте demo на прокрутку кода. Код нужен для ответа о reproducibility; интерфейс --- для рассказа решения.
 
@@ -243,18 +250,20 @@ python -m unittest discover -s tests -v
 
 \textbf{0:25--1:00.} «Мы превратили OCPI и DATEX в единый evidence pipeline: восстановили доступность, интервалы и scarcity, а реальный OCPI тариф используем как baseline.»
 
-\textbf{1:00--1:30.} «OSA-v1 добавляет небольшую ограниченную TIME component только при устойчивом наблюдаемом scarcity. Она не использует выдуманные queue или idle time.»
+\textbf{1:00--1:30.} «OSA-v1 определяет bounded scarcity signal, а prior funded MCU поддерживают qualified alternatives. Offer, issuance и redemption не смешиваются; MCU не является DAEI.»
 
-\textbf{1:30--2:20.} «Поскольку elasticity неизвестна, мы не прячем её: варьируем release, accepted-start и delay assumptions. Fixed и adaptive проходят через один path, одни random numbers и одни metrics.»
+\textbf{1:30--2:20.} «Поскольку response неизвестен, мы варьируем price, credit, distance и delay assumptions. Fixed и adaptive используют общий path и random numbers; choice проходит safety и reconciled ledger.»
 
-\textbf{2:20--2:45.} «Результат --- robustness map и minimum response threshold, плюс guardrails по displaced use и spatial spillover.»
+\textbf{2:20--2:45.} «Результат --- four-domain map. Joint success требует system, redistribution, user-proxy и accounting gates одновременно.»
 
 \textbf{2:45--3:00.} «Наш ask: продолжить сбор, выбрать qualified pilot sites и заменить assumptions измеренными Vilnius effects.»
 
-\boxtext{\textbf{Главная фраза:} We do not claim that adaptive pricing is already proven; we identify the minimum behavioural response under which it becomes robust, expose access and spatial trade-offs, and turn that threshold into a measurable city pilot.}
+\boxtext{\textbf{Главная фраза:} We do not claim that the policy is already proven; we identify the joint price-and-credit response conditions under which it is robust within observable limits, expose spatial, access-proxy and accounting trade-offs, and turn them into a measurable city pilot.}
 
 \section{Вопросы жюри}
-\textbf{Почему pricing?} Это управляемый сигнал с быстрым rollout; но мы не считаем его заменой инфраструктуре и тестируем только там, где scarcity operational, а не equipment-driven.
+\textbf{Почему не только pricing?} Scarcity signal остаётся управляемым trigger, но ценовой вклад направляется в balanced MCU circulation для qualified alternatives. Это не замена инфраструктуре и не production payment system.
+
+\textbf{Это DAEI?} Нет. DAEI --- регулируемая renewable-transport accounting system и возможный future integration precedent. MCU --- отдельная simulated charging-balancing unit без conversion rate к DAEI.
 
 \textbf{Откуда вы знаете реакцию людей?} Пока не знаем. Поэтому $\theta$ маркирован assumed, выполняется sensitivity analysis, а threshold превращается в измеримую гипотезу пилота.
 
@@ -283,9 +292,9 @@ python -m unittest discover -s tests -v
 \item Evidence: OCPI + DATEX; EVSE is capacity unit; UTC storage/Vilnius calendar.
 \item Problem metric: observable operational scarcity, never an invented queue.
 \item Baseline: F1 structured observed tariff replay.
-\item Policy: OSA-v1, bounded $0.05$ EUR/min, trigger 0.5, grace 15 min, ramp 30 min.
+\item Policy: OSA-v1 scarcity signal + prior-funded MCU circulation; offer $\neq$ issuance $\neq$ redemption.
 \item Separation: $\lambda$ intensity, $\kappa$ coverage, $R_i(t)$ rollout.
-\item Unknown behaviour: explicit $\theta_r,\theta_a,\tau$ assumptions.
+\item Unknown behaviour: explicit price, credit, distance and delay assumptions.
 \item Fair comparison: same path, same random numbers, same metrics.
 \item Decision: Wilson lower bound $\ge 0.8$, minimum 20 replications.
 \item Guardrails: displaced starts, equipment loss, spatial spillover.

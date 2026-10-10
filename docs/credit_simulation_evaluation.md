@@ -5,7 +5,8 @@ Status: **implemented evaluation contract v1.0.0**.
 `src/credit_simulation_evaluation.py` completes step 14 of the
 credit-circulation plan. It evaluates every downstream paired run in four
 separate domains. It deliberately does not yet collapse them into one success
-flag; the joint `policy_robust` criterion belongs to step 15.
+flag inside this module; the joint `policy_robust` criterion is implemented by
+the subsequent `src/credit_robustness.py` layer.
 
 ## 1. System domain
 
