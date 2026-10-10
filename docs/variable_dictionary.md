@@ -269,6 +269,11 @@ milestone. They do not imply that a real payment or user account exists.
 | `receiver_preallocation_available_count` | simulated | EVSE count | approved concept, not implemented | Adaptive projected availability after local transitions and before cross-site allocation at the same timestamp. |
 | `receiver_preallocation_scarcity_ratio` | simulated | ratio `[0,1]` | approved concept, not implemented | `1 - preallocation_available / effective_operational_capacity`; used only when its state evidence is valid. |
 | `origin_receiver_distance_meters` | observed/reconstructed | meters | approved concept, not implemented | Haversine distance from accepted coordinates; not road travel distance. |
+| `credit_offer_batch_budget_mcu` | policy_defined, derived | integer MCU | approved concept, not implemented | `floor(distribution_fraction * pool_offerable_mcu)` at one scenario/replication/timestamp. |
+| `receiver_offer_slot_count` | policy_defined, derived | count | approved concept, not implemented | `floor(preallocation_available_count * receiver_capacity_fraction)`; offer exposure control, not capacity reservation. |
+| `credit_offer_amount_mcu` | simulated | integer MCU | approved concept, not implemented | Bounded 1--25 MCU offer derived from origin quote, distance supplement and receiver-availability bonus. |
+| `credit_offer_priority_score` | policy_defined, derived | non-negative score | approved concept, not implemented | Receiver availability multiplied by exponential distance decay; allocation ranking, not choice probability. |
+| `credit_offer_exposure_mcu` | simulated | integer MCU | approved concept, not implemented | Sum of maximum offer per choice opportunity; bounded by the fully funded batch budget. |
 
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in
@@ -281,6 +286,8 @@ Contribution timing, pool buckets, funding conservation, reserve and subsidy
 semantics are defined in [`credit_pool.md`](credit_pool.md).
 Receiver quality, capacity, equipment, distance, tariff and access gates are
 defined in [`receiver_eligibility.md`](receiver_eligibility.md).
+Funded offer amounts, receiver slots, batch exposure and deterministic edge
+allocation are defined in [`credit_allocation.md`](credit_allocation.md).
 
 The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
 assumed `theta_arrival` and assumed response delay as separate axes. Replication seed

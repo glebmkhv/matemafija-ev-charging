@@ -296,4 +296,5 @@ the remaining required fields. Contribution accrual, pool reserves, reversals
 and optional subsidy are now defined in [`credit_pool.md`](credit_pool.md). The
 receiver evaluation states, gates and reason codes are defined in
 [`receiver_eligibility.md`](receiver_eligibility.md). The next action is to
-define the credit-allocation rule.
+generalize the response contract using the offer amounts and immutable choice
+sets defined in [`credit_allocation.md`](credit_allocation.md).

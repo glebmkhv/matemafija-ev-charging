@@ -43,6 +43,8 @@ for implementation-level definitions.
   pool buckets, solvency reserve, subsidy and reversal treatment.
 - [Receiver eligibility](receiver_eligibility.md) — quality, equipment,
   capacity, spatial, tariff, access and compatibility boundaries.
+- [Credit allocation](credit_allocation.md) — funded batch exposure, bounded
+  offer amounts, receiver slots and deterministic pair prioritization.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Policy-independent response contract](response_contract.md) — boundary
