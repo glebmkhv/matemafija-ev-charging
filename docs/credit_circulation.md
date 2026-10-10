@@ -1,6 +1,6 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.14; implementation pending**.
+Status: **approved product and research contract v0.15; implementation pending**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -248,7 +248,8 @@ The approved sequence for the first PLAN milestone is:
 14. system, redistribution, user-proxy and accounting evaluation --
     **implemented in
     [`credit_simulation_evaluation.md`](credit_simulation_evaluation.md)**;
-15. joint policy-robustness criterion;
+15. joint policy-robustness criterion -- **implemented in
+    [`credit_robustness.md`](credit_robustness.md)**;
 16. Policy Lab flow;
 17. README and public documentation alignment;
 18. tests, reconciliation and final acceptance audit.
@@ -258,9 +259,9 @@ provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--14 are complete. Every downstream run now has four separate evaluation
-blocks: system, redistribution, user proxy and accounting. Missing total user
-cost, travel-time, welfare and demographic evidence remains `not_evaluable`
-rather than favourable. The next action is to define the joint
-`policy_robust` criterion without allowing one domain to hide failure in
-another.
+Steps 1--15 are complete. Joint success now requires simultaneous system,
+redistribution, observable user-proxy and accounting success in each valid
+replication, followed by a minimum sample, maximum non-evaluable share and
+Wilson lower-bound test. The result is explicitly
+`observable_policy_robust`, not validated welfare/fairness or pilot readiness.
+The next action is the Policy Lab flow.

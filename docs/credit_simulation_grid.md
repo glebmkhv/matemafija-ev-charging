@@ -117,4 +117,5 @@ capacity reservation and MCU issuance. The executable boundary remains honest
 about its current allocation inputs. The implemented step-14
 [four-domain evaluator](credit_simulation_evaluation.md) now calculates system,
 redistribution, user-proxy and accounting outputs from these reconciled runs.
-Step 15 may define joint policy robustness.
+The step-15 joint criterion now evaluates observable policy robustness across
+replications.

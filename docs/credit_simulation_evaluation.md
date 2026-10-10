@@ -90,5 +90,6 @@ individual welfare, demographic fairness or legal/accounting readiness.
 
 The project can now inspect origin-system effects, redistribution realization,
 limited user-facing proxies and ledger health without substituting one domain
-for another. Step 15 may define a joint policy-robustness rule over these
-outputs, with `not_evaluable` treated distinctly from success.
+for another. The implemented
+[`credit_robustness.md`](credit_robustness.md) contract combines these outputs
+conjunctively, with `not_evaluable` treated distinctly from success.

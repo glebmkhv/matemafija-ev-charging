@@ -300,5 +300,5 @@ has also implemented append-only ledger, atomic reservation events and the
 step-12 fairness/safety boundary. The step-13 downstream grid now integrates
 response, funded credit offers, choice, accounting and safety dimensions while
 preserving their provenance. The step-14 four-domain evaluator now reports the
-resulting runs without collapsing their trade-offs; step 15 may define joint
-robustness.
+resulting runs without collapsing their trade-offs. The step-15 joint criterion
+now requires every observable domain gate to pass.

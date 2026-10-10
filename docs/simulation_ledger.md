@@ -162,5 +162,5 @@ each funded alternative against the current replayed snapshot before
 reservation. The [step-13 downstream grid](credit_simulation_grid.md) now
 integrates that gate with paired choice and ledger replay without weakening
 accounting conservation. The step-14 four-domain evaluator now reports ledger
-health separately from system, redistribution and user proxies; step 15 may
-define their joint robustness rule.
+health separately from system, redistribution and user proxies. The step-15
+joint criterion now requires accounting success alongside every other domain.

@@ -89,5 +89,6 @@ The project now has enforceable, typed pre-reservation guards and an honest
 three-state distributional audit. Missing user evidence remains visible rather
 than being synthesized. The step-13 downstream grid now integrates these
 decisions with paired choice draws and ledger replay. The step-14 evaluator now
-reports their system, redistribution, user-proxy and accounting consequences;
-step 15 may define joint robustness.
+reports their system, redistribution, user-proxy and accounting consequences.
+The step-15 joint criterion now treats a failed or non-evaluable safety domain
+as distinct from success.

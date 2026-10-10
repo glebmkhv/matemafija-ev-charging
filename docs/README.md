@@ -58,6 +58,8 @@ for implementation-level definitions.
 - [Four-domain credit evaluation](credit_simulation_evaluation.md) — separate
   system, redistribution, user-proxy and accounting outputs with explicit
   non-evaluable boundaries.
+- [Joint credit-policy robustness](credit_robustness.md) — conjunctive domain
+  gates, Wilson-bound scenario success and observable-scope claim limits.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —
