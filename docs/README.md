@@ -32,6 +32,9 @@ for implementation-level definitions.
 
 ## Simulation and evaluation layer
 
+- [Credit-circulation contract](credit_circulation.md) — approved product
+  thesis, research question, terminology, DAEI separation and claim boundaries
+  for the next implementation milestone.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Policy-independent response contract](response_contract.md) — boundary
