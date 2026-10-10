@@ -50,6 +50,8 @@ for implementation-level definitions.
   pending reservation.
 - [Append-only simulation ledger](simulation_ledger.md) — event replay, MCU
   conservation, receiver capacity and atomic two-resource reservation.
+- [Fairness and safety guards](fairness_safety.md) — pre-reservation hard gates,
+  observable distributional proxies and explicit non-evaluable boundaries.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —

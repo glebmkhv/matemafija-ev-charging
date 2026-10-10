@@ -84,6 +84,13 @@ class FundedReceiverOffer:
     distance_provenance: ProvenanceClass = ProvenanceClass.RECONSTRUCTED
     receiver_state_provenance: ProvenanceClass = ProvenanceClass.SIMULATED
     provenance: ProvenanceClass = ProvenanceClass.SIMULATED
+    unresolved_warnings: tuple[str, ...] = (
+        "vehicle_connector_compatibility_unverified",
+        "road_travel_time_unavailable",
+        "individual_accessibility_needs_unverified",
+        "cross_operator_acceptance_unverified",
+        "total_session_cost_unavailable",
+    )
 
     def validate(self, candidate: RedistributionCandidate):
         identity = (
@@ -142,6 +149,9 @@ class FundedReceiverOffer:
             raise ValueError("Receiver state provenance is invalid")
         if self.provenance is not ProvenanceClass.SIMULATED:
             raise ValueError("Funded receiver offer must be simulated")
+        if (len(self.unresolved_warnings) != len(set(self.unresolved_warnings))
+                or any(not item for item in self.unresolved_warnings)):
+            raise ValueError("Receiver offer warnings must be non-empty and unique")
 
 
 @dataclass(frozen=True)

@@ -331,4 +331,5 @@ components, and deterministic global allocation. It does not embed behavioural
 sensitivity in the policy rule. The generalized typed response contract,
 release/accepted-start profiles and credit-sensitive receiver choice are now
 implemented. Selected offers now connect to atomic reservation and the
-append-only simulation ledger. Step 12 may add fairness and safety guards.
+append-only simulation ledger and the step-12 pre-reservation fairness/safety
+contract. Step 13 may now integrate these dimensions into paired simulation.

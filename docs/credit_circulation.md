@@ -1,6 +1,6 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.11; implementation pending**.
+Status: **approved product and research contract v0.12; implementation pending**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -241,7 +241,8 @@ The approved sequence for the first PLAN milestone is:
     [`receiver_choice.md`](receiver_choice.md)**;
 11. append-only simulation ledger -- **implemented in
     [`simulation_ledger.md`](simulation_ledger.md)**;
-12. fairness and safety guards;
+12. fairness and safety guards -- **implemented in
+    [`fairness_safety.md`](fairness_safety.md)**;
 13. paired simulation grid extension;
 14. system, redistribution, user and accounting evaluation;
 15. joint policy-robustness criterion;
@@ -254,7 +255,9 @@ provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--11 are complete. Typed response and receiver choice now feed an
-append-only event-sourced ledger with exact MCU conservation and atomic
-receiver-capacity/credit reservation. The next action is to implement fairness
-and safety guards over policy exposure and outcomes.
+Steps 1--12 are complete. Every funded alternative can now pass through typed
+pre-reservation hard guards, while batches receive an observable distributional
+proxy audit with a distinct `not_evaluable` state. The project makes no
+demographic-fairness claim without demographic evidence. The next action is to
+extend the paired simulation grid with the credit, spatial-choice, ledger and
+safety dimensions.
