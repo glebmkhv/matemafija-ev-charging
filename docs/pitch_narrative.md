@@ -71,8 +71,9 @@ The city receives a falsifiable pilot design rather than a promise.
 3. Open Response and move price, credit and distance sensitivities while naming
    them as assumptions.
 4. Open Evaluation and show why four domains remain separate.
-5. Open Robustness and explain why the effectiveness heatmap remains locked
-   until data gates pass.
+5. Open Robustness and show the labelled illustrative response surface. State
+   once that the formal effectiveness result remains locked until data gates
+   pass.
 6. Finish on Decision, the bounded pilot proposal and DAEI separation.
 
 ## Claim discipline

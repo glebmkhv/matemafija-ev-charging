@@ -154,6 +154,41 @@ def receiver_choice_curve(
     return tuple(rows)
 
 
+def illustrative_release_preview(
+    *,
+    baseline_probability=.20,
+    maximum_adjustment_eur_per_min=.05,
+    intensity_values=(0, .25, .5, .75, 1),
+    sensitivity_values=(0, 5, 10, 20, 35),
+):
+    """Return an explanatory response surface, never an effectiveness estimate.
+
+    The surface is intentionally independent of collected-history readiness.  It
+    visualises the declared release-response equation so a presentation can show
+    what an assumption-driven scenario means without publishing a formal scarcity
+    heatmap before the transition model is data-qualified.
+    """
+    rows = []
+    for theta in sensitivity_values:
+        curve = response_curve(
+            baseline_probability,
+            theta,
+            maximum_adjustment_eur_per_min,
+            direction="release",
+            intensity_values=intensity_values,
+        )
+        for point in curve:
+            rows.append({
+                "lambda": point["lambda"],
+                "theta_release": theta,
+                "release_probability_change_pp":
+                    100*(point["probability"]-baseline_probability),
+                "provenance": "assumed",
+                "claim_scope": "illustrative_mechanism_only",
+            })
+    return tuple(rows)
+
+
 def policy_lab_flow():
     """Return the fixed jury-facing story without embedding simulation results."""
     return (

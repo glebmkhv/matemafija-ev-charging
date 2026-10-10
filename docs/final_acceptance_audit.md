@@ -34,7 +34,7 @@ python src/collect.py --help
 python -m streamlit run src/policy_dashboard.py --server.headless true
 ```
 
-The automated suite contains **155 passing tests**. Local Markdown links,
+The automated suite contains **156 passing tests**. Local Markdown links,
 tracked-file inventory, generated-artifact policy, diff whitespace and obvious
 credential patterns were also checked. The public project guide was compiled
 and visually inspected page by page during documentation acceptance.

@@ -33,32 +33,32 @@ Vilnius already has charging infrastructure and public data, but availability is
 
 \section*{Slide 3 --- The solution}
 \speaker{GALINA}{0:52--1:35}
-We built a policy stress-testing digital twin. First, it reconstructs usable charging capacity from OCPI and DATEX evidence. OSA-v1 activates a small, capped scarcity contribution only when low availability is qualified and sustained. Prior funded contributions can then support Mobility Credit Unit offers at suitable, less-scarce alternatives. The user sees a positive option, not only a restriction. The model asks whether this complete contribution-to-credit flow improves availability without suppressing accepted use, overloading another station or spending the same credit twice.
+We built a policy stress-testing digital twin. It turns live charging data into three simple steps: detect sustained scarcity, create a small and capped contribution, and use funded credits to offer drivers a less-crowded alternative. Instead of only saying ``pay more'', MATEMAFIJA asks: can we make the easier choice also the better choice for the network?
 
 \section*{Slide 4 --- Why it is credible and useful}
 \speaker{GALINA}{1:35--2:25}
-The key is that we separate facts from assumptions. Statuses, timestamps and tariffs are observed. Availability intervals and scarcity are reconstructed. Price, credit, distance and delay sensitivities are explicitly assumed because this policy has not been deployed. Fixed and adaptive scenarios use the same baseline and random draws. Every result must pass four gates: system improvement, safe redistribution, an observable user-distance proxy and exact accounting reconciliation. If evidence is insufficient, the intervention is withheld --- not silently treated as zero.
+The key is transparency. We know station status, time and tariff from public data. We do not yet know how strongly people will react to a price or a credit, so we let the user vary that response instead of hiding it. A scenario counts as promising only if availability improves, the problem is not pushed to another station, the alternative remains reasonable for the driver, and the credit balance still adds up.
 
 The daily beneficiaries are drivers. Charging operators and the city are the first potential customers of the policy-testing and pilot-design tool. Our headline pilot KPI is simple: reduce qualified zero-availability without increasing scarcity at receiver stations.
 
 \section*{Slide 5 --- Demo: observed evidence}
 \speaker{GLEB}{2:25--3:18}
 \cue{Open Evidence. Show the map, source timestamp and readiness panel.}
-Here is the live evidence layer. These are source records, not a mock dataset. We preserve the OCPI hierarchy, tariff components and timezone-aware history. For each site we separate available, charging and equipment-related states, because broken infrastructure must not trigger a demand policy. The collection currently spans just over four days. Our formal transition gate requires seven, so the effectiveness heatmap is deliberately locked. That lock is a feature: the prototype refuses to present assumptions as evidence.
+Here is the live evidence layer. These are source records, not a mock dataset. We show the map, current states and real tariff structure, and we keep equipment faults separate from demand-related scarcity. Our collection currently spans just over four days; the formal model requires seven. So the verified effectiveness result remains locked, but the next screen offers a clearly labelled illustrative scenario preview.
 
 \section*{Slide 6 --- Demo: policy, response and credit flow}
 \speaker{GLEB}{3:18--4:25}
-\cue{Open Policy, then Response. Move one credit or distance control only.}
-When evidence qualifies, OSA-v1 produces a bounded signal after a fifteen-minute grace period. It is not an actual bill. The Policy view connects that signal to a limited MCU pool and funded receiver offers. In Response, we vary release sensitivity, accepted-start sensitivity, credit value, distance and delay. These curves are hypothetical mechanisms, not measured Vilnius elasticity.
+\cue{Open Policy, then Response. Move one credit or response control only.}
+When scarcity persists, OSA-v1 creates a bounded signal after a fifteen-minute grace period. It is not an actual bill. The Policy view shows how contributions can fund credits for available alternatives. In Response, we vary how likely a driver is to release a busy point or choose another station. These are visible assumptions, not measured Vilnius behaviour.
 
-\cue{Show the flow and four evaluation cards.}
-A selected alternative reserves one capacity unit and the required MCU atomically. Only a simulated receiver start may issue the credit. Offer, reservation, issuance and redemption remain separate. We then compare the fixed and adaptive arms across system, redistribution, user-proxy and accounting outputs. No single good scarcity number can hide displaced demand or a failed ledger.
+\cue{Open Robustness. Show the labelled preview and move one response value.}
+This heatmap answers one honest question: how strong would the response need to be before the mechanism becomes interesting? Because the history is not yet qualified, it is labelled illustrative, not evidence and not a forecast. The production model then checks whether scarcity falls without simply moving it elsewhere, and whether every simulated credit remains funded.
 
 \section*{Slide 7 --- Benefit, business path and ask}
 \speaker{GALINA}{4:25--5:00}
-MATEMAFIJA gives Vilnius something more useful than an untested pricing promise: it shows how strong the response must be, where the trade-offs appear and what a pilot must measure. Our next step is a bounded city--operator pilot with selected sites, Session or CDR evidence and pseudonymous choice records. That would replace assumed sensitivities with measured Vilnius behaviour.
+MATEMAFIJA gives Vilnius a practical decision: which sites should enter a small city--operator pilot, what response must be measured, and when the policy is not worth scaling. Session data and privacy-safe choice records would turn today's assumptions into measured Vilnius behaviour.
 
-Lithuania's DAEI system is a relevant accounting precedent and a possible future operator-level bridge, but MCU and DAEI are separate today. We are not selling a finished payment system. We are offering a transparent way to decide whether one should be piloted. MATEMAFIJA --- turning scarcity into better charging choices. Thank you.
+Lithuania's DAEI system shows that verified transport contributions can be accounted for, and it is a possible future bridge. Our credits are separate today. We are not asking the city to trust a formula. We are giving it a safe way to test one. MATEMAFIJA --- turning scarcity into better charging choices. Thank you.
 
 \newpage
 \section*{Seven-slide production plan}
@@ -68,8 +68,8 @@ Lithuania's DAEI system is a relevant accounting precedent and a possible future
 2 & Problem & Marta/origin situation plus one live-data number \\
 3 & Solution & Observe $\to$ qualify scarcity $\to$ fund MCU $\to$ offer alternative \\
 4 & Credibility & observed/reconstructed/assumed/simulated and four gates \\
-5 & Evidence demo & real map, source timestamp, tariffs and readiness lock \\
-6 & Mechanism demo & OSA signal, response control, MCU/capacity flow and evaluation cards \\
+5 & Evidence demo & real map, source timestamp, tariffs and readiness boundary \\
+6 & Mechanism demo & OSA signal, one response control and labelled illustrative preview \\
 7 & Benefit + ask & Drivers / CPO / Vilnius, one KPI, bounded pilot, DAEI future path \\
 \bottomrule
 \end{tabularx}
@@ -91,7 +91,7 @@ Lithuania's DAEI system is a relevant accounting precedent and a possible future
 
 \textbf{Can you prove behaviour changes?} No. We expose assumed response parameters and define the minimum response that a pilot must validate.
 
-\textbf{Why is the heatmap locked?} Four days of data do not meet the seven-day transition gate. Showing effectiveness now would disguise assumptions as evidence.
+\textbf{Why show a heatmap before seven days?} The formal effectiveness result remains locked. The visible chart is an illustrative response surface generated from declared assumptions, permanently labelled as not evidence and not a forecast.
 
 \textbf{Are credits real?} No. MCU is an integer simulation unit with reconciled lifecycle states. The prototype processes no payment and holds no personal wallet.
 

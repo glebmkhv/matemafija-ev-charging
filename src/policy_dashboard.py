@@ -12,6 +12,7 @@ try:
     from .policy_lab import (
         joint_gate_preview, load_policy_lab_evidence, policy_claims,
         policy_lab_flow, receiver_choice_curve, response_curve,
+        illustrative_release_preview,
     )
 except ImportError:  # pragma: no cover
     try:
@@ -19,12 +20,14 @@ except ImportError:  # pragma: no cover
         from src.policy_lab import (
             joint_gate_preview, load_policy_lab_evidence, policy_claims,
             policy_lab_flow, receiver_choice_curve, response_curve,
+            illustrative_release_preview,
         )
     except ImportError:
         from database_v2 import DATABASE_PATH
         from policy_lab import (
             joint_gate_preview, load_policy_lab_evidence, policy_claims,
             policy_lab_flow, receiver_choice_curve, response_curve,
+            illustrative_release_preview,
         )
 
 
@@ -301,9 +304,32 @@ def robustness_tab(evidence):
         st.warning("Replication status: not_evaluable — it is not counted as success.")
     if not evidence.history_gate_possible:
         st.warning(
-            "No effectiveness heatmap is displayed yet: current data fail the "
-            "necessary seven-day history gate. Showing coloured scenario results "
-            "now would turn assumptions into apparent evidence."
+            "Illustrative scenario preview — current history is not yet "
+            "data-qualified. The chart below is generated from declared response "
+            "assumptions; it is not observed effectiveness and not a forecast."
+        )
+        preview_data = pd.DataFrame(illustrative_release_preview())
+        heatmap = px.density_heatmap(
+            preview_data,
+            x="lambda",
+            y="theta_release",
+            z="release_probability_change_pp",
+            histfunc="avg",
+            text_auto=".1f",
+            color_continuous_scale="YlGnBu",
+            labels={
+                "lambda": "Policy intensity λ",
+                "theta_release": "Assumed release sensitivity θᵣ",
+                "release_probability_change_pp": "Illustrative Δ release probability · pp",
+            },
+            title="What response would the policy need? · illustrative mechanism only",
+        )
+        heatmap.update_layout(height=430)
+        st.plotly_chart(heatmap, width="stretch")
+        st.caption(
+            "Fixed baseline probability 20%; maximum adjustment EUR 0.05/min. "
+            "The formal effectiveness heatmap remains locked until the seven-day "
+            "global gate and per-site readiness checks pass."
         )
     else:
         st.info(
@@ -311,7 +337,8 @@ def robustness_tab(evidence):
             "reports and versioned run artifacts before publishing a heatmap."
         )
     st.markdown("""
-    The scenario map is indexed by upstream and downstream assumptions and shows:
+    Once data-qualified, the formal scenario map is indexed by upstream and
+    downstream assumptions and shows:
 
     - paired scarcity change and its simulation interval;
     - probability of improvement and Wilson interval;

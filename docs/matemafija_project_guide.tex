@@ -80,7 +80,7 @@ simulated & результат модели, не реальный факт & co
 
 Все timestamps хранятся как timezone-aware UTC; календарные признаки рассчитываются в \code{Europe/Vilnius}. Наивный OCPI timestamp интерпретируется как локальное время Вильнюса и затем переводится в UTC. Collection gap не считается нулевым спросом.
 
-\boxtext{\textbf{Текущий снимок БД (10.10.2026, около 17:47 EEST):} 2,836,399 OCPI EVSE-status observations; 1,984 current OCPI location records; 1,707 tariffs; 5,900 tariff assignments; 4.08 дня временного окна. В записях с city, содержащим Vilnius: 892 locations и 2,120 EVSE, из них 1,331 available и 180 charging в текущем snapshot. Это source records, не утверждение об уникальных физических станциях. Formal 7-day gate ещё не выполнен, поэтому effectiveness heatmap намеренно заблокирован. Числа пересчитать перед записью: collector продолжает работу.}
+\boxtext{\textbf{Текущий снимок БД (10.10.2026, около 17:47 EEST):} 2,836,399 OCPI EVSE-status observations; 1,984 current OCPI location records; 1,707 tariffs; 5,900 tariff assignments; 4.08 дня временного окна. В записях с city, содержащим Vilnius: 892 locations и 2,120 EVSE, из них 1,331 available и 180 charging в текущем snapshot. Это source records, не утверждение об уникальных физических станциях. Formal 7-day gate ещё не выполнен, поэтому formal effectiveness heatmap заблокирован. Для demo разрешён отдельно маркированный illustrative response preview: он строится только из declared assumptions, не участвует в robustness decision и не является evidence или forecast. Числа пересчитать перед записью: collector продолжает работу.}
 
 \section{Термины без жаргона}
 \begin{longtable}{p{3.5cm}p{12.5cm}}
@@ -137,7 +137,22 @@ R_i(t)=\operatorname{clip}\!\left(\frac{D_i(t)-T_{grace}}{T_{ramp}},0,1\right)
 S_i(t)=P_i(t)^{\gamma}R_i(t),\qquad
 \Delta p_{raw}(i,t)=\Delta p_{max}S_i(t).
 \]
-Здесь $D_i$ --- reconstructed lower-bound duration устойчивого scarcity condition, не idle time автомобиля.
+Здесь $D_i$ --- reconstructed lower-bound duration устойчивого scarcity condition, не idle time автомобиля. Она строится по упорядоченной последовательности snapshot конкретной станции, а не приходит готовым полем из OCPI. Для каждого snapshot проверяется одновременно:
+\begin{enumerate}
+\item snapshot пригоден для capacity evidence: coverage не ниже 0.80, capacity положительна и availability определена;
+\item $C_i(t)>C_{trigger}$, то есть operational pressure действительно выше порога;
+\item хотя бы один EVSE имеет статус \code{CHARGING}: существует наблюдаемый proxy для возможного release channel;
+\item доля equipment-unavailable EVSE не выше 0.50, чтобы поломка не интерпретировалась как demand scarcity;
+\item разрыв от предыдущего snapshot не превышает две ожидаемые cadence (в MVP: $2\times5=10$ min).
+\end{enumerate}
+
+Время первого snapshot непрерывной qualifying-последовательности обозначим $t_i^{start}$. Тогда
+\[
+D_i(t)=\frac{t-t_i^{start}}{60\ \text{seconds}}
+\]
+в минутах. На первом qualifying snapshot $D_i=0$. Если следующий snapshot также проходит все условия, $D_i$ растёт на фактически прошедшее время. Любой failed condition, ineligible snapshot или gap больше 10 минут разрывает эпизод: $t_i^{start}$ забывается, а $D_i$ становится 0 до начала новой qualifying-последовательности. Поэтому величина является \emph{нижней границей} продолжительности: дефицит мог начаться между двумя наблюдениями, но мы считаем его только с первого подтверждённого snapshot.
+
+Пример при cadence 5 min: snapshots в 18:00, 18:05, 18:10 и 18:15 проходят условия, поэтому $D_i=0,5,10,15$. В 18:20 $D_i=20$, и persistence factor становится $(20-15)/30=1/6$. Если запись 18:25 потеряна, но 18:30 получена, gap равен 10 min и последовательность ещё сохраняется; если следующий snapshot только в 18:31, gap 11 min превышает guard, и новый эпизод начинается с $D_i=0$. Это защищает policy от ложной уверенности при дырках в данных.
 
 Параметры MVP: $C_{trigger}=0.50$, $T_{grace}=15$ min, $T_{ramp}=30$ min, $\gamma=1.2$, $\Delta p_{max}=0.05$ EUR/min; coverage gate 0.80; equipment guard 0.50. Это versioned test policy, не оптимальные значения для Вильнюса.
 
@@ -179,15 +194,46 @@ h^{start}_{1}=h^{start}_{0}\exp\{-\theta_a d_i(t-\tau)\}.
 $\theta_r,\theta_a,\tau$ имеют provenance \code{assumed}. При нулевом driver adaptive arm обязан совпасть с fixed arm (identity test).
 
 \section{Simulation, MCU circulation, evaluation и robustness}
+\subsection{Что именно моделируется}
+Раздел объединяет две связанные, но логически раздельные части. \term{Upstream simulation} отвечает на вопрос, как assumed response на policy signal может изменить proxy-переходы \code{charging $\to$ available} и \code{available $\to$ charging}. \term{Downstream credit circulation} отвечает на вопрос, что произойдёт с displaced/deferred start candidates после появления funded alternatives: будет ли выбран receiver, можно ли безопасно зарезервировать capacity и MCU, и сохраняется ли accounting identity.
+
+Полная причинно-вычислительная цепочка сценария:
+\[
+\begin{aligned}
+&\boxed{\text{observed/reconstructed baseline}}
+\to\boxed{\text{F1 + OSA signal}}
+\to\boxed{\text{assumed release/start response}}\\
+&\hspace{8mm}\to\boxed{\text{redistribution candidates}}
+\to\boxed{\text{funded receiver offers}}\\
+&\hspace{8mm}\to\boxed{\text{choice + safety + ledger}}
+\to\boxed{\text{four-domain evaluation}}.
+\end{aligned}
+\]
+Каждый блок сохраняет provenance. Первые данные observed/reconstructed; policy parameters policy-defined; behavioural coefficients assumed; trajectories, choices и ledger events simulated. Благодаря этому итог нельзя ошибочно прочитать как prediction реального поведения.
+
+\subsection{Paired experiment и one-step projection}
 Upstream grid варьирует $\lambda\times\theta_r\times\theta_a\times\tau$; downstream grid добавляет credit/distance sensitivities, reserve и residual receiver capacity. Fixed/adaptive получают один trajectory и common random numbers. Funded offers проходят safety, choice, atomic MCU/capacity reservation и append-only ledger replay. One-step origin projection:
 \[
 A'=A+\text{releases}-\text{starts},\qquad C'=C-\text{releases}+\text{starts}.
 \]
 Это условная one-step модель, не полный forecast demand. Поскольку projections пока не fed forward, episode-duration metrics для них отключены.
 
+\term{Paired} означает, что fixed и adaptive arms получают один исходный baseline и одинаковые random uniforms. Если outcome различается, причина --- policy/response parameters, а не независимый случайный шум. При $\lambda=0$ или нулевой response sensitivity adaptive arm обязан дать identity с fixed arm; это проверяется тестами.
+
+Переменные $A'$ и $C'$ не становятся новым наблюдаемым состоянием станции. Они показывают только ближайшее условное следствие дополнительных release и изменённых accepted starts. Модель не переносит этот projection автоматически в следующий timestamp; поэтому она не заявляет полноценный demand forecast и не вычисляет counterfactual episode duration.
+
 Для каждой метрики считается $\Delta M=M_{adaptive}-M_{fixed}$. Для zero-availability и scarcity отрицательное значение хорошо; для availability --- положительное.
 
 Каждый run оценивается отдельно по system, redistribution, user-proxy и accounting domains. Joint run success требует прохождения всех четырёх gates; missing evidence остаётся \code{not\_evaluable}. Scenario получает \code{observable\_policy\_robust} только при минимум 20 valid replications, доле non-evaluable не более 0.20 и нижней 95\% Wilson bound joint success не меньше 0.80. Это не validated welfare/fairness и не pilot readiness.
+
+Четыре домена нельзя взаимозаменять:
+\begin{itemize}
+\item \textbf{System}: изменение zero-availability share, mean availability, operational scarcity, release и displaced-start proxies относительно F1.
+\item \textbf{Redistribution}: сколько candidates получили funded offer, выбрали receiver или остались outside; сколько capacity потреблено и сколько offers заблокировал residual-capacity guard.
+\item \textbf{User-proxy}: размер предложенных/выбранных MCU и straight-line distance. Total session cost, road travel time, welfare и demographic fairness остаются \code{not\_evaluable}.
+\item \textbf{Accounting}: funded, available, reserved, outstanding и settled MCU, issuance/redemption и нулевая reconciliation difference.
+\end{itemize}
+Joint success является конъюнкцией: хороший system effect не может компенсировать перенос дефицита на receiver, плохой user proxy или сломанный ledger. Wilson lower bound добавляет защиту от вывода по случайно удачной малой выборке: важна не только observed success share, но и её консервативная нижняя граница.
 
 \subsection{Contribution и MCU accounting}
 MCU --- целое scenario-accounting unit: $1$ MCU имеет policy-defined reference $0.01$ EUR-equivalent eligible charging service. Это не деньги, balance пользователя, cashback или DAEI conversion. В режиме \code{unit\_accounting} реальная session duration не выдумывается; используется reference interval $q_{ref}=5$ min:
@@ -207,6 +253,8 @@ reserve_{target}=\left\lceil r(available+reserved+outstanding)\right\rceil,
 \]
 Offer не двигает MCU; reservation переводит available $\to$ reserved; issuance --- reserved $\to$ outstanding; redemption --- outstanding $\to$ settled. MCU и receiver capacity резервируются атомарно.
 
+Это различие устраняет double spending. Например, при 100 available MCU и reserve target 10 MCU максимально offerable 90 MCU. Показ пользователю offer на 20 MCU ещё не уменьшает balance. После успешного выбора ledger одновременно резервирует 20 MCU и одну capacity unit receiver: состояния становятся 80 available и 20 reserved. Только simulated receiver start переводит 20 reserved в 20 outstanding и потребляет capacity. Позднее redemption переводит outstanding в settled. Если service не начинается, reservation освобождается, а 20 MCU и capacity возвращаются; частичного движения только одного ресурса быть не может.
+
 \subsection{Credit-sensitive receiver choice}
 Для opportunity $o$ и qualified receiver $j$:
 \[
@@ -216,10 +264,57 @@ P(j\mid o)=\frac{e^{V_{oj}}}{1+\sum_{k\in J_o}e^{V_{ok}}}.
 \]
 Outside option имеет utility 0 и вероятность $1/(1+\sum e^{V})$. Здесь $c$ --- funded MCU offer, $d$ --- straight-line distance, $A$ --- receiver availability; $\beta$ имеют provenance \code{assumed}. Distance не равен route time, а probability не является observed choice share.
 
-\section{Spatial redistribution}
-Displaced starts не исчезают автоматически. Пространственный модуль распределяет только их proxy между nearby receivers при assumed redistribution probability, straight-line distance limit и receiver capacity fraction. Алгоритм seeded, integer, nearest-first, без overbooking; выполняется conservation: allocated + unassigned = candidates.
+Знаки коэффициентов задают прозрачную гипотезу: больший funded credit повышает utility, большая distance снижает её, а availability влияет напрямую только если интерфейс действительно показывает её пользователю. По умолчанию direct availability effect выключен, чтобы availability не действовала скрыто дважды --- как eligibility guard и как perceived benefit. Вектор вероятностей нормализуется вместе с обязательным outside outcome. Поэтому модель никогда не принуждает candidate выбрать станцию: при непривлекательных или отсутствующих offers probability outside остаётся положительной или равной 1.
 
-Обязательно показываются outside/unassigned outcomes, receiver capacity, residual-capacity blocks и ledger reconciliation. Road travel time, individual compatibility, welfare и demographic fairness остаются not evaluable; их нельзя подменять straight-line distance или MCU.
+Stochastic draw означает только simulated selection. Затем safety layer заново проверяет expiry, MCU cap, offerable pool, distance, текущую receiver availability, наличие capacity и minimum residual capacity. Selection становится reservation только после успешной атомарной проверки. Иными словами:
+\[
+\begin{aligned}
+\text{offer shown}&\ne\text{receiver selected}\ne\text{capacity reserved}\\
+&\ne\text{service started}\ne\text{MCU issued}\ne\text{MCU redeemed}.
+\end{aligned}
+\]
+Эти состояния намеренно разделены и записываются append-only events; replay должен после каждого события восстановить тот же balance и lifecycle.
+
+\section{Spatial redistribution}
+\subsection{Зачем нужен пространственный слой}
+Displaced/deferred accepted starts не могут просто исчезнуть из системы. Иначе scarcity можно было бы искусственно «улучшить», подавив starts на origin station и не показав, куда делась потребность. Пространственный слой сохраняет каждый integer candidate и допускает только два terminal outcomes: выбор qualified receiver или \code{outside/unassigned}. Последнее не называется отказом, потерянной поездкой или неудовлетворённым реальным demand: текущие данные этого не наблюдают.
+
+Candidate появляется upstream только из парного различия accepted-start proxy между fixed и adaptive arms. Это не человек и не индивидуальная сессия, а единица simulated displaced-use accounting. Origin, timestamp, scenario и replication сохраняются, поэтому downstream результат можно точно связать с породившим его upstream run.
+
+\subsection{Receiver eligibility и capacity}
+Потенциальный receiver должен отличаться от origin, иметь координаты, находиться внутри policy-defined distance gate и обладать доступной operational capacity. Haversine distance по координатам --- straight-line proxy; она не утверждает road distance или travel time. Без данных нельзя гарантировать connector/power compatibility, accessibility, cross-operator acceptance или полную стоимость сессии, поэтому эти ограничения остаются явными warnings.
+
+Usable receiving capacity ограничивается консервативно. В legacy spatial allocator:
+\[
+K_j^{usable}(t)=\left\lfloor A^{count}_j(t)\,f_{capacity}\right\rfloor,
+\]
+где $A^{count}_j$ --- projected available EVSE count, а $f_{capacity}\in[0,1]$ --- assumed доля, разрешённая для redistribution. В credit-circulation path safety guard дополнительно требует, чтобы после reservation оставалась минимум одна residual capacity unit. Поэтому улучшение origin не должно немедленно создавать zero availability на receiver.
+
+\subsection{Два реализованных механизма}
+Репозиторий сохраняет два совместимых уровня:
+\begin{enumerate}
+\item \textbf{Legacy capacity-constrained allocator}: применяет seeded participation probability, строит origin--receiver edges, сортирует их глобально nearest-first и распределяет integer starts без overbooking. Он полезен как простой network stress test.
+\item \textbf{Current credit-sensitive path}: получает immutable funded offers, вычисляет choice probabilities с explicit outside option, применяет safety guards и только затем атомарно резервирует receiver capacity и MCU. Именно этот путь соответствует новой contribution-to-credit концепции.
+\end{enumerate}
+Nearest-first не используется как доказательство пользовательского выбора в credit-sensitive path: там distance является лишь одним assumed utility component. Оба механизма seeded и воспроизводимы, но отвечают на разные вопросы --- физически возможное распределение против гипотетического выбора funded alternative.
+
+\subsection{Conservation и пример}
+Для каждого origin и каждого decision timestamp должны выполняться identities:
+\[
+N_{candidate}=N_{receiver\ selected}+N_{outside},
+\qquad
+N_{displaced}=N_{allocated}+N_{unassigned}.
+\]
+Для receiver:
+\[
+N_{allocated,j}\le K_j^{usable},
+\qquad
+A^{after}_j=A^{before}_j-N_{allocated,j}\ge K_j^{residual}.
+\]
+Например, три candidates рассматривают receiver с двумя available units. Если policy требует оставить одну residual unit, безопасно зарезервировать можно только одну. Даже если второй candidate выбирает тот же receiver, повторная pre-reservation проверка видит обновлённый ledger/capacity state и блокирует overbooking; outcome остаётся outside/unassigned либо выбирается другая безопасная alternative. Итоги обязаны показать одну realised redistribution, два outside outcomes и одну consumed capacity unit, а не скрыть заблокированные попытки.
+
+\subsection{Что разрешено утверждать}
+Обязательно показываются receiver/outside outcomes, capacity consumed, residual-capacity blocks, distance proxies и ledger reconciliation. Разрешённый вывод: \emph{при данных assumptions сценарий перераспределяет такую долю proxy candidates, не нарушая заданные capacity и accounting guards}. Нельзя утверждать, что реальные водители поедут по этим маршрутам, что travel time приемлем, что individual welfare вырос или что достигнута demographic fairness. Для таких выводов нужны pilot choice records, Session/CDR, road routing, compatibility и privacy-safe user/access evidence.
 
 \section{Карта репозитория}
 \begin{longtable}{p{5.3cm}p{10.7cm}}
@@ -246,7 +341,7 @@ Displaced starts не исчезают автоматически. Простр�
 \code{src/dashboard.py} & raw evidence dashboard.\\
 \code{src/policy\_dashboard.py}, \code{policy\_lab.py} & Policy Lab UI.\\
 \code{docs/} & формальные contracts и claim boundaries.\\
-\code{tests/} & 155 automated tests на текущем состоянии.\\
+\code{tests/} & 156 automated tests на текущем состоянии.\\
 \bottomrule
 \end{longtable}
 
@@ -271,6 +366,7 @@ Live evidence & карта, sources, timestamps, status counts, tariff component
 Readiness & history span, coverage и blocker reasons & почему model output разрешён или withheld \\
 OSA-v1 & pressure, persistence, bounded adjustment & policy mechanism, не фактический bill \\
 Response curves & release/start probability и receiver choice & sensitivity assumption, не measured elasticity \\
+Illustrative preview & assumed response strength $\times$ policy intensity & mechanism only; не evidence/forecast \\
 MCU flow & pool, offer, reservation, issuance, redemption & reconciled simulated accounting \\
 Four domains & system, redistribution, user-proxy, accounting & раздельные evaluation outputs \\
 Joint robustness & Wilson rule, threshold, not-evaluable handling & scenario-conditional decision rule \\
@@ -278,7 +374,7 @@ Decision & pilot evidence и partner ask & следующий проверяем
 \bottomrule
 \end{longtable}
 
-\textbf{Главный демонстрационный путь:} один реальный Vilnius site/source/timestamp $\to$ qualified или withheld scarcity state $\to$ bounded OSA signal $\to$ funded alternative scenario $\to$ assumed response $\to$ four-domain decision. Если data gate закрыт, нельзя показывать coloured effectiveness как результат; показывается честный lock и illustrative mechanism curve.
+\textbf{Главный демонстрационный путь:} один реальный Vilnius site/source/timestamp $\to$ qualified или withheld scarcity state $\to$ bounded OSA signal $\to$ funded alternative scenario $\to$ assumed response $\to$ decision boundary. Если data gate закрыт, formal effectiveness остаётся locked, но можно показать отдельный coloured preview с постоянной надписью \emph{Illustrative scenario --- current history is not yet data-qualified}. Цвет кодирует только рассчитанное изменение release probability при declared assumptions, а не доказанную эффективность policy.
 
 \section{Как проводить demo}
 \begin{enumerate}
@@ -286,7 +382,7 @@ Decision & pilot evidence и partner ask & следующий проверяем
 \item \textbf{Policy:} покажите origin signal $\rightarrow$ MCU pool $\rightarrow$ funded receiver offer; отделите offer от issuance.
 \item \textbf{Response:} покажите price, credit и distance sensitivities как assumptions.
 \item \textbf{Evaluation:} покажите четыре domain cards и not-evaluable boundaries.
-\item \textbf{Robustness:} объясните conjunctive gates, Wilson rule и readiness lock.
+\item \textbf{Robustness:} покажите illustrative preview и одним предложением отделите его от будущего data-qualified Wilson result.
 \item \textbf{Decision:} завершите bounded pilot и поясните, что DAEI --- future pathway, не текущий MCU.
 \end{enumerate}
 Никогда не тратьте demo на прокрутку кода. Код нужен для ответа о reproducibility; интерфейс --- для рассказа решения.
@@ -315,7 +411,7 @@ Decision & pilot evidence и partner ask & следующий проверяем
 
 \textbf{Где очередь?} В данных её нет, и мы её не заявляем. Zero availability --- строго определённый scarcity evidence.
 
-\textbf{Почему heatmap заблокирована?} Formal gate требует минимум 7 дней qualified history. Блокировка предотвращает красивый, но статистически слабый вывод.
+\textbf{Почему вы показываете heatmap до 7 дней?} Formal effectiveness heatmap всё ещё заблокирован. Видимый preview показывает только форму assumed release-response mechanism; он постоянно маркирован как illustrative, не проходит в robustness decision и не выдаётся за эффект на Vilnius data.
 
 \textbf{Вы просто подавляете demand?} Мы отдельно показываем accepted-start displacement, unassigned demand и receiver scarcity. Успех по одной scarcity metric недостаточен.
 
@@ -348,12 +444,12 @@ Decision & pilot evidence и partner ask & следующий проверяем
 \item Fair comparison: same path, same random numbers, same metrics.
 \item Decision: Wilson lower bound $\ge 0.8$, minimum 20 replications.
 \item Guardrails: displaced starts, equipment loss, spatial spillover.
-\item Current limitation: 4.08 days at the 10 October snapshot; 7-day transition gate not yet passed.
+\item Current limitation: 4.08 days at the 10 October snapshot; 7-day transition gate not yet passed; preview is illustrative only.
 \item Ask: collect $\rightarrow$ qualify sites $\rightarrow$ bounded pilot $\rightarrow$ validate response.
 \end{itemize}
 
 \section{Финальная проверка понимания}
-Если вы оба можете без подсказки ответить на пять вопросов, вы готовы: (1) почему zero availability не queue; (2) чем F1 отличается от OSA; (3) почему $\theta$ assumed; (4) как paired Monte Carlo делает сравнение честнее; (5) почему locked heatmap усиливает, а не ослабляет pitch.
+Если вы оба можете без подсказки ответить на пять вопросов, вы готовы: (1) почему zero availability не queue; (2) чем F1 отличается от OSA; (3) почему $\theta$ assumed; (4) как paired Monte Carlo делает сравнение честнее; (5) чем illustrative preview отличается от formal effectiveness result.
 
 \vfill
 \small\textit{Guide описывает фактическое состояние репозитория и локальной базы на 10 октября 2026. Числа readiness должны пересчитываться перед записью и презентацией, поскольку collector продолжает добавлять данные. Нормативные детали определяются versioned Markdown contracts в docs/.}

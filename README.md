@@ -82,10 +82,11 @@ OCPI location records, but only about 4.08 days of history. These are provider
 records, not a count of unique physical stations.
 
 The formal transition-model gate requires at least seven qualified local days.
-Until that gate passes, the Policy Lab intentionally locks the effectiveness
-heatmap. This is a data-readiness guardrail, not a negative result about the
-policy. Always recompute readiness before a presentation because the collector
-continues to extend the window.
+Until that gate passes, the Policy Lab locks the formal effectiveness heatmap.
+It may still show a permanently labelled illustrative response surface so the
+mechanism can be demonstrated; that preview is assumption-driven, not evidence
+and not a forecast. Always recompute readiness before a presentation because
+the collector continues to extend the window.
 
 ## Quick start
 
@@ -179,7 +180,7 @@ Run the complete test suite:
 python -m unittest discover -s tests -v
 ```
 
-The current suite contains 155 tests covering persistence, timestamp handling,
+The current suite contains 156 tests covering persistence, timestamp handling,
 state reconstruction, scarcity, tariffs, policies, trajectories, response
 channels, MCU lifecycle and ledger reconciliation, paired credit simulation,
 four-domain evaluation, joint robustness and Policy Lab logic.

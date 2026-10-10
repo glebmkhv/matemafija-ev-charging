@@ -4,8 +4,9 @@ Status: **implemented interface flow v2.0.0**.
 
 `src/policy_dashboard.py` completes step 16 of the credit-circulation plan. It
 is a read-only Streamlit explanation and decision interface. It does not alter
-the database, execute payments or display an effectiveness heatmap before the
-formal evidence gates allow one.
+the database or execute payments. Before the formal evidence gates pass it may
+display only an explicitly labelled illustrative response surface, never a
+formal effectiveness result.
 
 ## 1. Six-step navigation
 
@@ -34,10 +35,13 @@ The evidence tab computes the current collection span directly from timezone-
 aware observations. Seven days is only the global duration prerequisite;
 individual sites still require coverage, transition-event and F1 readiness.
 
-When the global gate is closed, the evaluation/robustness tabs explain the
-required outputs but do not render coloured effectiveness results. When it is
-open, the interface still requires versioned per-site run artifacts before a
-heatmap may be published.
+When the global gate is closed, the evaluation/robustness tabs may render an
+illustrative release-response surface calculated solely from declared assumed
+parameters. It carries claim scope `illustrative_mechanism_only` and a permanent
+warning that current history is not data-qualified. It is not evidence, a
+forecast or an input to the robustness decision. When the gate is open, the
+interface still requires versioned per-site run artifacts before a formal
+effectiveness heatmap may be published.
 
 ## 3. Explanatory controls
 

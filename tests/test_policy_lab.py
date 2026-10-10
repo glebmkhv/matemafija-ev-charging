@@ -3,7 +3,8 @@ import unittest
 from datetime import datetime, timezone
 
 from src.policy_lab import (
-    joint_gate_preview, load_policy_lab_evidence, policy_claims,
+    illustrative_release_preview, joint_gate_preview,
+    load_policy_lab_evidence, policy_claims,
     policy_lab_flow, receiver_choice_curve, response_curve,
 )
 
@@ -89,6 +90,22 @@ class PolicyLabTest(unittest.TestCase):
         self.assertEqual(
             joint_gate_preview(True, None, False, True), "failure",
         )
+
+    def test_illustrative_preview_is_explicitly_assumed_and_identity_at_zero(self):
+        rows = illustrative_release_preview(
+            intensity_values=(0, 1), sensitivity_values=(0, 10),
+        )
+        self.assertEqual(len(rows), 4)
+        self.assertTrue(all(row["provenance"] == "assumed" for row in rows))
+        self.assertTrue(all(
+            row["claim_scope"] == "illustrative_mechanism_only" for row in rows
+        ))
+        zero_intensity = [row for row in rows if row["lambda"] == 0]
+        self.assertTrue(all(
+            abs(row["release_probability_change_pp"]) < 1e-12
+            for row in zero_intensity
+        ))
+        self.assertGreater(rows[-1]["release_probability_change_pp"], 0)
 
 
 if __name__ == "__main__":
