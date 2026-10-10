@@ -256,7 +256,7 @@ milestone. They do not imply that a real payment or user account exists.
 | `pool_settled_mcu` | simulated | integer MCU | implemented | Cumulative MCU redeemed against eligible simulated service. |
 | `pool_offerable_mcu` | policy_defined, derived | integer MCU | implemented | `max(0, available_mcu - ceil(reserve_ratio * unsettled_funded_mcu))`. |
 | `funding_shortfall_mcu` | simulated | integer MCU | approved concept, not implemented | Accrued-funding reversal amount not coverable by available balance; blocks policy robustness unless explicitly subsidized. |
-| `mobility_credit_offer` | simulated | integer MCU | approved concept, not implemented | Conditional reward offered for an eligible action; it is neither issuance nor redemption. |
+| `mobility_credit_offer` | simulated | integer MCU | typed input and grid lifecycle implemented; allocation engine pending | Conditional reward offered for an eligible action; it is neither issuance nor redemption. |
 | `mobility_credit_reservation` | simulated | integer MCU | implemented | Temporary scenario commitment pending a qualifying action. |
 | `mobility_credit_issuance` | simulated | integer MCU | implemented | Ledger event after a simulated qualifying action; not evidence of a real user balance. |
 | `mobility_credit_redemption` | simulated | integer MCU | implemented | Partial or full scenario application of issued credit under versioned rules. |
@@ -272,7 +272,7 @@ milestone. They do not imply that a real payment or user account exists.
 | `origin_receiver_distance_meters` | observed/reconstructed | meters | approved concept, not implemented | Haversine distance from accepted coordinates; not road travel distance. |
 | `credit_offer_batch_budget_mcu` | policy_defined, derived | integer MCU | approved concept, not implemented | `floor(distribution_fraction * pool_offerable_mcu)` at one scenario/replication/timestamp. |
 | `receiver_offer_slot_count` | policy_defined, derived | count | approved concept, not implemented | `floor(preallocation_available_count * receiver_capacity_fraction)`; offer exposure control, not capacity reservation. |
-| `credit_offer_amount_mcu` | simulated | integer MCU | approved concept, not implemented | Bounded 1--25 MCU offer derived from origin quote, distance supplement and receiver-availability bonus. |
+| `credit_offer_amount_mcu` | simulated | integer MCU | validated 1--25 MCU input; allocation formula pending | Bounded offer amount consumed by choice, safety and ledger; derivation remains the allocation engine's responsibility. |
 | `credit_offer_priority_score` | policy_defined, derived | non-negative score | approved concept, not implemented | Receiver availability multiplied by exponential distance decay; allocation ranking, not choice probability. |
 | `credit_offer_exposure_mcu` | simulated | integer MCU | approved concept, not implemented | Sum of maximum offer per choice opportunity; bounded by the fully funded batch budget. |
 | `origin_price_contribution_rate` | policy_defined | EUR/min | v2 release implemented; accepted-start pending | Effective OSA/adoption price signal used only by origin release and accepted-start response profiles. |
@@ -282,6 +282,10 @@ milestone. They do not imply that a real payment or user account exists.
 | `receiver_choice_systematic_utility` | simulated | dimensionless | implemented | Separate credit, distance and explicitly visible availability components under assumed beta coefficients; scarcity is the complementary audit/gate variable, not a duplicated utility term. |
 | `receiver_choice_probability` | simulated | probability | implemented | Stable-softmax probability over the immutable receiver set plus an explicit outside/unassigned outcome. |
 | `receiver_choice_outcome` | simulated | enum | implemented | `receiver_selected_pending_reservation` or `outside_unassigned`; selection itself moves neither MCU nor receiver capacity. |
+| `offer_safety_status` | simulated | enum | implemented | Per-offer `pass` or `block` decision evaluated against expiry, distance, receiver capacity, fundability and ledger reconciliation before choice. |
+| `distributional_proxy_audit_status` | simulated | enum | implemented | Batch `pass`, `block` or `not_evaluable`; it does not claim demographic fairness. |
+| `credit_grid_choice_seed` | policy_defined | non-negative integer | implemented | Replication-level seed reset across downstream scenarios so each candidate uses paired choice noise. |
+| `minimum_residual_receiver_capacity` | policy_defined | EVSE count | implemented grid axis | Minimum receiver capacity retained after a proposed reservation to limit scarcity transfer. |
 
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in

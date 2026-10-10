@@ -2,7 +2,8 @@
 
 Status: **implemented v1.0.0**.
 
-`src/robustness.py` completes step 13 of the research plan. It aggregates the
+`src/robustness.py` completed step 13 of the earlier pricing-only research
+sequence. It aggregates the
 paired scarcity changes from Monte Carlo replications and identifies the part
 of the declared assumption grid where improvement is statistically robust.
 

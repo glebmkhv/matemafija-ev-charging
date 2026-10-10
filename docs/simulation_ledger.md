@@ -157,7 +157,8 @@ candidate and credit lifecycle state machines, capacity accounting and an
 atomic two-resource reservation boundary. Selection remains distinguishable
 from reservation, receiver start, issuance and redemption.
 
-The implemented [fairness and safety contract](fairness_safety.md) now evaluates
+The implemented [fairness and safety contract](fairness_safety.md) evaluates
 each funded alternative against the current replayed snapshot before
-reservation. Step 13 may integrate that gate into the paired simulation grid
-without weakening accounting conservation.
+reservation. The [step-13 downstream grid](credit_simulation_grid.md) now
+integrates that gate with paired choice and ledger replay without weakening
+accounting conservation. Step 14 may evaluate the reconciled outcomes.

@@ -297,5 +297,6 @@ release-credit profile. Typed accepted-start processing now emits conserved,
 unit-level redistribution candidates from paired draws. Credit-sensitive
 receiver choice is now implemented over immutable funded alternatives. Step 11
 has also implemented append-only ledger, atomic reservation events and the
-step-12 fairness/safety boundary. Step 13 may integrate all response, credit,
-choice, accounting and safety dimensions into the paired grid.
+step-12 fairness/safety boundary. The step-13 downstream grid now integrates
+response, funded credit offers, choice, accounting and safety dimensions while
+preserving their provenance. Step 14 may evaluate the resulting runs.

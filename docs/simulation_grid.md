@@ -1,6 +1,7 @@
 # Paired simulation grid and Monte Carlo protocol
 
-Status: **implemented v2.1.0**.
+Status: **upstream paired response grid implemented v2.1.0; downstream credit
+extension implemented separately v1.0.0**.
 
 `src/simulation_grid.py` implements a seeded paired experiment over release and
 accepted-start responses. It does not introduce a queue, post-charge idle time
@@ -109,10 +110,12 @@ must reconcile by timestamp and run with the aggregate displaced-start proxy.
 They are counterfactual opportunities, not observed people or vehicles.
 
 Release totals are diagnostic outputs, not the final policy score. Both arms
-are now evaluated with the same snapshot-level scarcity definitions in
-[`simulation_evaluation.md`](simulation_evaluation.md). Step 13 will aggregate
-those paired metric differences into uncertainty intervals, robustness regions
-and a minimum response threshold.
+are evaluated with the same snapshot-level scarcity definitions in
+[`simulation_evaluation.md`](simulation_evaluation.md). The step-13
+[`credit_simulation_grid.md`](credit_simulation_grid.md) extension now carries
+redistribution candidates through receiver choice, safety and ledger replay.
+Step 14 will evaluate system, redistribution, user-proxy and accounting
+outcomes jointly.
 
 ## 6. Claim boundary
 

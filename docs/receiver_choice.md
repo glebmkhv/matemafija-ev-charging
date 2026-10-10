@@ -149,5 +149,6 @@ and strictly upstream of reservation, issuance and receiver-state mutation.
 The append-only simulation ledger and atomic reservation boundary are now
 implemented without changing the behavioural model. The step-12 fairness and
 safety contract now gates reservation and audits observable distributional
-proxies; step 13 may integrate both into paired simulation.
+proxies. The step-13 downstream grid now integrates choice, safety and ledger
+outcomes using one paired draw per candidate. Step 14 may evaluate the results.
 and safety guards.

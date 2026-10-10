@@ -63,10 +63,11 @@ The default audit blocks a sufficiently large batch when more than 50% of
 candidates receive no offer, one receiver receives more than 60% of offers, or
 any evaluated offer fails a hard safety gate. Every offer must also have a
 corresponding safety decision; incomplete guard coverage blocks the audit.
-Fewer than 20 candidates yields
-`not_evaluable`. These thresholds are policy-defined prototype values, not
-empirical estimates; step 13 must expose them to scenario sensitivity rather
-than present them as city standards.
+Fewer than 20 candidates yields `not_evaluable`. These thresholds are
+policy-defined prototype values, not empirical estimates. The downstream grid
+now varies the residual-capacity guard and preserves the complete specification
+on every run; broader threshold sensitivity belongs in later experiment
+configurations rather than being presented as a city standard.
 
 ## 5. Claim boundary
 
@@ -86,5 +87,6 @@ scope. The current MVP never produces a personalized recommendation.
 
 The project now has enforceable, typed pre-reservation guards and an honest
 three-state distributional audit. Missing user evidence remains visible rather
-than being synthesized. Step 13 can integrate these decisions into the paired
-simulation grid and vary policy thresholds alongside response assumptions.
+than being synthesized. The step-13 downstream grid now integrates these
+decisions with paired choice draws and ledger replay. Step 14 may evaluate their
+system, redistribution, user-proxy and accounting consequences.

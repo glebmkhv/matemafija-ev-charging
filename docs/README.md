@@ -52,6 +52,9 @@ for implementation-level definitions.
   conservation, receiver capacity and atomic two-resource reservation.
 - [Fairness and safety guards](fairness_safety.md) — pre-reservation hard gates,
   observable distributional proxies and explicit non-evaluable boundaries.
+- [Paired credit simulation grid](credit_simulation_grid.md) — downstream
+  credit-choice, safety, capacity and ledger scenarios with common random
+  numbers.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —

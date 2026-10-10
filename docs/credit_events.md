@@ -303,4 +303,5 @@ is now fixed in [`response_contract.md`](response_contract.md). Typed release
 and accepted-start profiles plus unit-level redistribution candidates are now
 implemented, together with credit-sensitive receiver choice over immutable
 funded alternatives, an append-only atomic ledger and pre-reservation
-fairness/safety decisions. The next action is paired-grid integration.
+fairness/safety decisions. The step-13 downstream paired grid now exercises
+these event paths; the next action is multi-domain evaluation.
