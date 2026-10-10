@@ -39,6 +39,8 @@ for implementation-level definitions.
   event envelope, contribution/choice/credit state machines and reconciliation.
 - [Mobility-credit unit](credit_units.md) — MCU denomination, integer precision,
   rounding, scenario wallets, issuance, partial redemption and expiry.
+- [Contribution pool](credit_pool.md) — contribution accrual, causal funding,
+  pool buckets, solvency reserve, subsidy and reversal treatment.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Policy-independent response contract](response_contract.md) — boundary

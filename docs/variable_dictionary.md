@@ -250,6 +250,12 @@ milestone. They do not imply that a real payment or user account exists.
 |---|---|---|---|---|
 | `scarcity_contribution` | policy_defined rule; simulated event | integer MCU | approved concept, not implemented | Bounded scenario inflow associated with a qualified scarce origin. It is not a fine or an observed payment. |
 | `incentive_pool_balance` | simulated | integer MCU | approved concept, not implemented | Scenario balance available after prior obligations and declared reserves. |
+| `pool_available_mcu` | simulated | integer MCU | approved concept, not implemented | Funded MCU not reserved or issued; includes the protected reserve. |
+| `pool_reserved_mcu` | simulated | integer MCU | approved concept, not implemented | MCU committed to accepted offers but not yet issued. |
+| `pool_outstanding_mcu` | simulated | integer MCU | approved concept, not implemented | Issued MCU not yet redeemed, expired or validly reversed. |
+| `pool_settled_mcu` | simulated | integer MCU | approved concept, not implemented | Cumulative MCU redeemed against eligible simulated service. |
+| `pool_offerable_mcu` | policy_defined, derived | integer MCU | approved concept, not implemented | `max(0, available_mcu - ceil(reserve_ratio * unsettled_funded_mcu))`. |
+| `funding_shortfall_mcu` | simulated | integer MCU | approved concept, not implemented | Accrued-funding reversal amount not coverable by available balance; blocks policy robustness unless explicitly subsidized. |
 | `mobility_credit_offer` | simulated | integer MCU | approved concept, not implemented | Conditional reward offered for an eligible action; it is neither issuance nor redemption. |
 | `mobility_credit_reservation` | simulated | integer MCU | approved concept, not implemented | Temporary scenario commitment pending a qualifying action. |
 | `mobility_credit_issuance` | simulated | integer MCU | approved concept, not implemented | Ledger event after a simulated qualifying action; not evidence of a real user balance. |
@@ -267,6 +273,8 @@ Logical participants, canonical event names, allowed lifecycle transitions and
 terminal reconciliation are defined in [`credit_events.md`](credit_events.md).
 MCU denomination, integer precision, rounding, scenario wallets, partial
 redemption and expiry are defined in [`credit_units.md`](credit_units.md).
+Contribution timing, pool buckets, funding conservation, reserve and subsidy
+semantics are defined in [`credit_pool.md`](credit_pool.md).
 
 The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
 assumed `theta_arrival` and assumed response delay as separate axes. Replication seed

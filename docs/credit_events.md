@@ -1,6 +1,6 @@
 # Credit-circulation participants and event contract
 
-Status: **approved design contract v0.2; implementation pending**.
+Status: **approved design contract v0.3; implementation pending**.
 
 This document completes step 2 of the credit-circulation implementation plan.
 It defines logical participants, event identities, lifecycle transitions and
@@ -92,14 +92,17 @@ yet transfer value.
 | `osa_decision_active` | `policy_defined` | qualified scarcity evidence | OSA produces an active raw/effective adjustment. |
 | `osa_decision_inactive` | `policy_defined` | qualified context | OSA is evaluated but its activation rule is false. |
 | `osa_decision_withheld` | `policy_defined` | qualified or withheld context | No numeric OSA value may be consumed downstream. |
-| `contribution_evaluated` | `policy_defined` | active OSA decision | Contribution rule is evaluated for the origin opportunity. |
+| `contribution_evaluated` | `policy_defined` | active OSA decision | Contribution rule and non-binding quote are evaluated for the origin opportunity. |
 | `contribution_withheld` | `policy_defined` | contribution evaluation | No contribution may accrue; reason code is mandatory. |
 | `contribution_waived` | `policy_defined` | contribution evaluation | A valid rule explicitly produces no contribution, for example a future exemption. This is distinct from withheld. |
-| `contribution_assessed` | `simulated` | contribution evaluation | A positive scenario obligation is created under a valid rule. It is not an observed payment. |
+| `contribution_assessed` | `simulated` | contribution evaluation plus completed simulated origin service | A positive scenario obligation is created under a valid rule. It is not an observed payment. |
 
 `contribution_assessed` is not the same as cash collection or pool availability.
 The accounting lifecycle below determines whether and when an assessed amount
 becomes available.
+
+The pre-choice quote is not assessed or accrued. Contribution timing, amount
+and funding buckets are defined in [`credit_pool.md`](credit_pool.md).
 
 ## 5. Contribution lifecycle
 
@@ -173,6 +176,7 @@ redistribution_candidate_created
 | `redistribution_candidate_created` | `simulated` | An accepted-start difference enters the spatial-choice layer. |
 | `response_assumption_applied` | `assumed` | Records the exact price, credit, distance and state sensitivities/delays used. |
 | `origin_retained` | `simulated` | Candidate does not move away from the origin under the scenario response. |
+| `simulated_origin_start` | `simulated` | A projected accepted-start proxy completes at the origin and may qualify for contribution assessment. |
 | `alternative_selected` | `simulated` | Choice model selects one offered receiver; this is not a real trip. |
 | `action_deferred` | `simulated` | Candidate is delayed beyond the current decision step under an explicit model. |
 | `candidate_unassigned` | `simulated` | No terminal allocation is made; reason distinguishes no offer, nonparticipation and network-capacity exhaustion. |
@@ -242,16 +246,18 @@ Within one UTC decision timestamp, future implementation must use this order:
 2. reconstruct site state and evaluate data quality;
 3. qualify or withhold scarcity evidence;
 4. evaluate rollout, coverage and OSA;
-5. evaluate contribution eligibility;
-6. assess and, under the selected accounting mode, accrue contribution;
-7. construct receiver candidates and evaluate eligibility;
-8. calculate fundable offers and create an immutable choice set;
-9. record the multidimensional response assumption;
-10. draw origin/start and alternative-choice outcomes with the paired random
+5. evaluate contribution eligibility and produce a non-binding quote;
+6. construct receiver candidates and evaluate eligibility;
+7. calculate offers using only prior funded pool balance and create an immutable
+   choice set;
+8. record the multidimensional response assumption;
+9. draw origin/start and alternative-choice outcomes with the paired random
     design;
-11. atomically reserve receiver capacity and credit for a selected alternative;
+10. for retained origin service, emit `simulated_origin_start`, then assess and
+    accrue its contribution for future timestamps;
+11. for a selected alternative, atomically reserve receiver capacity and credit;
 12. emit the projected receiver start or release failed reservations;
-13. issue credit only after the qualifying action;
+13. issue credit only after the qualifying alternative action;
 14. apply later redemption, expiry or reversal events when their conditions are
     reached;
 15. reconcile candidate conservation, receiver capacity and ledger balances;
@@ -285,6 +291,7 @@ it proves internal accounting consistency, not legal settlement correctness.
 This contract completes step 2 when all subsequent modules use these role and
 event names or introduce a versioned amendment. Step 3 has now fixed amounts,
 units and lifecycle timing in [`credit_units.md`](credit_units.md). Python event
-classes remain deferred until the pool and allocation contracts determine the
-remaining required fields. The next action is to define contribution accrual,
-pool reserves, reversals and optional subsidy semantics.
+classes remain deferred until the receiver and allocation contracts determine
+the remaining required fields. Contribution accrual, pool reserves, reversals
+and optional subsidy are now defined in [`credit_pool.md`](credit_pool.md). The
+next action is to define receiver-site eligibility.
