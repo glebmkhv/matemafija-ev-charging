@@ -92,6 +92,7 @@ class CreditPairedSimulationRun:
     scenario: CreditSimulationScenario
     upstream_replication_index: int
     upstream_random_seed: int
+    upstream_additional_release_count: int
     choice_random_seed: int
     candidate_count: int
     offered_candidate_count: int
@@ -113,7 +114,8 @@ class CreditPairedSimulationRun:
     def validate(self):
         counts = (
             self.upstream_replication_index, self.upstream_random_seed,
-            self.choice_random_seed, self.candidate_count,
+            self.upstream_additional_release_count, self.choice_random_seed,
+            self.candidate_count,
             self.offered_candidate_count, self.proposed_offer_count,
             self.safety_pass_offer_count, self.safety_block_offer_count,
             self.selected_receiver_count, self.outside_unassigned_count,
@@ -124,6 +126,8 @@ class CreditPairedSimulationRun:
             raise ValueError("Credit-grid counts and seeds must be non-negative")
         if self.candidate_count != len(self.candidates):
             raise ValueError("Credit-grid candidate count is inconsistent")
+        if self.candidate_count < 0:
+            raise ValueError("Credit-grid candidate count cannot be negative")
         if self.proposed_offer_count != len(self.offers):
             raise ValueError("Credit-grid offer count is inconsistent")
         if self.offered_candidate_count != len({item.candidate_id for item in self.offers}):
@@ -386,6 +390,7 @@ def _run_downstream_scenario(
         scenario=scenario,
         upstream_replication_index=upstream_run.replication_index,
         upstream_random_seed=upstream_run.random_seed,
+        upstream_additional_release_count=upstream_run.additional_release_count,
         choice_random_seed=choice_seed,
         candidate_count=len(downstream_candidates),
         offered_candidate_count=len({item.candidate_id for item in proposed_offers}),

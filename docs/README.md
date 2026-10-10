@@ -55,6 +55,9 @@ for implementation-level definitions.
 - [Paired credit simulation grid](credit_simulation_grid.md) — downstream
   credit-choice, safety, capacity and ledger scenarios with common random
   numbers.
+- [Four-domain credit evaluation](credit_simulation_evaluation.md) — separate
+  system, redistribution, user-proxy and accounting outputs with explicit
+  non-evaluable boundaries.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Generalized policy-independent response contract](response_contract.md) —

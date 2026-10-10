@@ -114,6 +114,7 @@ does not show that a real person moved, received value or benefited.
 The project now has one reproducible paired path from observed-baseline
 transition stress testing to credit-sensitive receiver choice, safety gating,
 capacity reservation and MCU issuance. The executable boundary remains honest
-about its current allocation inputs. Step 14 can calculate system,
-redistribution, user-proxy and accounting evaluation from these reconciled run
-outputs.
+about its current allocation inputs. The implemented step-14
+[four-domain evaluator](credit_simulation_evaluation.md) now calculates system,
+redistribution, user-proxy and accounting outputs from these reconciled runs.
+Step 15 may define joint policy robustness.

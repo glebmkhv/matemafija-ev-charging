@@ -286,6 +286,11 @@ milestone. They do not imply that a real payment or user account exists.
 | `distributional_proxy_audit_status` | simulated | enum | implemented | Batch `pass`, `block` or `not_evaluable`; it does not claim demographic fairness. |
 | `credit_grid_choice_seed` | policy_defined | non-negative integer | implemented | Replication-level seed reset across downstream scenarios so each candidate uses paired choice noise. |
 | `minimum_residual_receiver_capacity` | policy_defined | EVSE count | implemented grid axis | Minimum receiver capacity retained after a proposed reservation to limit scarcity transfer. |
+| `realized_redistribution_share` | simulated | ratio `[0,1]` or unavailable | implemented | Selected receiver outcomes divided by redistribution candidates; absent when no candidates exist. |
+| `mean_selected_credit_mcu` | simulated | MCU | implemented user proxy | Mean issued offer amount among selected alternatives; not a monetary welfare measure. |
+| `mean_selected_distance_km` | simulated from reconstructed distance | km | implemented user proxy | Mean straight-line distance among selected alternatives; not route distance or travel time. |
+| `user_welfare` | unavailable | not applicable | explicitly not evaluable | Requires total cost, route/time, behavioural and user evidence not present in public OCPI/DATEX. |
+| `credit_ledger_reconciliation_difference_mcu` | simulated | integer MCU | implemented | Must equal zero after replay; nonzero invalidates the run. |
 
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in

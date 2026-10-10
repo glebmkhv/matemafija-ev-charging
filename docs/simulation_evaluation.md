@@ -98,9 +98,12 @@ Not permitted:
 > The policy was observed to reduce queues, waiting time, post-charge idle or
 > persistent real-world scarcity episodes.
 
-The paired per-replication changes are aggregated into uncertainty intervals,
-robustness regions and minimum tested response thresholds in
-[`robustness.md`](robustness.md) without changing these definitions.
+The paired per-replication changes are aggregated into pricing-only uncertainty
+intervals, robustness regions and minimum tested response thresholds in
+[`robustness.md`](robustness.md) without changing these definitions. The newer
+credit-circulation path links the same scarcity result to redistribution,
+user-proxy and accounting outputs in
+[`credit_simulation_evaluation.md`](credit_simulation_evaluation.md).
 
 Every evaluation also reports fixed/adaptive accepted-start proxy counts and
 their `deferred_or_displaced_start_proxy_count`. This trade-off must accompany

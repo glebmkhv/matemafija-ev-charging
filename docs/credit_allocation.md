@@ -333,5 +333,6 @@ release/accepted-start profiles and credit-sensitive receiver choice are now
 implemented. Selected offers now connect to atomic reservation and the
 append-only simulation ledger and the step-12 pre-reservation fairness/safety
 contract. The step-13 downstream grid now consumes immutable allocation outputs
-and integrates them with paired choice, safety and ledger replay. Step 14 may
-evaluate those outcomes; the allocation engine itself remains pending.
+and integrates them with paired choice, safety and ledger replay. The step-14
+evaluator now reports those outcomes in four domains; the allocation engine
+itself remains pending.

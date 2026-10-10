@@ -161,4 +161,6 @@ The implemented [fairness and safety contract](fairness_safety.md) evaluates
 each funded alternative against the current replayed snapshot before
 reservation. The [step-13 downstream grid](credit_simulation_grid.md) now
 integrates that gate with paired choice and ledger replay without weakening
-accounting conservation. Step 14 may evaluate the reconciled outcomes.
+accounting conservation. The step-14 four-domain evaluator now reports ledger
+health separately from system, redistribution and user proxies; step 15 may
+define their joint robustness rule.

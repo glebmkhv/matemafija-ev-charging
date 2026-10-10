@@ -299,4 +299,6 @@ receiver choice is now implemented over immutable funded alternatives. Step 11
 has also implemented append-only ledger, atomic reservation events and the
 step-12 fairness/safety boundary. The step-13 downstream grid now integrates
 response, funded credit offers, choice, accounting and safety dimensions while
-preserving their provenance. Step 14 may evaluate the resulting runs.
+preserving their provenance. The step-14 four-domain evaluator now reports the
+resulting runs without collapsing their trade-offs; step 15 may define joint
+robustness.

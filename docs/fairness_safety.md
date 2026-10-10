@@ -88,5 +88,6 @@ scope. The current MVP never produces a personalized recommendation.
 The project now has enforceable, typed pre-reservation guards and an honest
 three-state distributional audit. Missing user evidence remains visible rather
 than being synthesized. The step-13 downstream grid now integrates these
-decisions with paired choice draws and ledger replay. Step 14 may evaluate their
-system, redistribution, user-proxy and accounting consequences.
+decisions with paired choice draws and ledger replay. The step-14 evaluator now
+reports their system, redistribution, user-proxy and accounting consequences;
+step 15 may define joint robustness.
