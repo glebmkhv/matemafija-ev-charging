@@ -21,7 +21,7 @@ the policy effect has been causally validated in Vilnius.
 | Joint robustness | Pass | Missing evidence is `not_evaluable`; success requires all gates plus replication, missingness and Wilson-bound thresholds. |
 | Claim discipline | Pass | No observed queue, post-charge idle time, welfare, demographic fairness or causal effect is claimed. |
 | Jury interface | Pass | The six-tab Policy Lab follows evidence → policy → response → evaluation → robustness → decision. |
-| Public-repository hygiene | Pass with owner action | No tracked database, credentials or large data artifact; generated render intermediates removed. A licence still requires an owner choice. |
+| Public-repository hygiene | Pass with owner action | No tracked database, credentials or large data artifact; public/private audience wording, documentation languages and notebook validity were checked. A licence still requires an owner choice. |
 
 ## 2. Verification performed
 
@@ -36,8 +36,9 @@ python -m streamlit run src/policy_dashboard.py --server.headless true
 
 The automated suite contains **156 passing tests**. Local Markdown links,
 tracked-file inventory, generated-artifact policy, diff whitespace and obvious
-credential patterns were also checked. The public project guide was compiled
-and visually inspected page by page during documentation acceptance.
+credential patterns were also checked. The exploratory notebook is valid,
+output-free and path-portable. The public project guide was compiled and
+visually inspected page by page during documentation acceptance.
 
 ## 3. Contract reconciliation
 

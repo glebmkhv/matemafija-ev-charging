@@ -5,6 +5,10 @@ guide. Read the [full guide](../output/pdf/matemafija_project_guide.pdf) first
 for the integrated architecture and presentation story; use the documents below
 for implementation-level definitions.
 
+The normative contracts and public repository entry point are in English. The
+integrated guide and supplementary mathematical explainer are in Russian; both
+are public explanatory material and do not override the versioned contracts.
+
 ## Evidence layer
 
 - [Database v2](database_v2.md) — OCPI/DATEX storage, time semantics, identity,
@@ -84,6 +88,9 @@ for implementation-level definitions.
 - [Data and modelling assumptions](assumptions.md)
 - [Pitch narrative and demo sequence](pitch_narrative.md)
 - `matemafija_project_guide.tex` — editable source for the public PDF guide.
+- `matemafija_explained_guide.tex` — Russian-language supplementary explanation
+  of the transition and response model; source only, not a separate normative
+  contract.
 - `matemafija_five_minute_speech.tex` — final five-minute script, demo cues and
   jury answers; the compiled PDF is linked from the repository README.
 

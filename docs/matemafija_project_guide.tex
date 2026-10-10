@@ -15,12 +15,12 @@
 \setlength{\parskip}{5pt}
 \definecolor{navy}{HTML}{17365D}\definecolor{teal}{HTML}{167D8D}\definecolor{pale}{HTML}{EEF5F7}\definecolor{warn}{HTML}{8A4B08}
 \setlength{\headheight}{14pt}
-\pagestyle{fancy}\fancyhf{}\lhead{MATEMAFIJA}\rhead{Team Project Guide}\cfoot{\thepage}
+\pagestyle{fancy}\fancyhf{}\lhead{MATEMAFIJA}\rhead{Project Guide}\cfoot{\thepage}
 \newcommand{\term}[1]{\textbf{#1}}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\boxtext}[1]{\vspace{2mm}\noindent\fcolorbox{teal}{pale}{\parbox{0.94\linewidth}{#1}}\vspace{2mm}}
-\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]\Large Полный team guide по проекту и защите\\[2mm]\large Hack4Vilnius EV Charging Policy Lab}
-\author{Рабочий документ Глеба и Галины}
+\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]\Large Полное описание проекта и защиты\\[2mm]\large Hack4Vilnius EV Charging Policy Lab}
+\author{Команда MATEMAFIJA}
 \date{Финальная hackathon-версия 3.0 --- 10 октября 2026}
 
 \begin{document}
@@ -32,7 +32,7 @@
 \section{Как пользоваться guide}
 Сначала прочитайте разделы 2--5: после них вы сможете за 10 минут объяснить идею. Затем изучите 6--13 для понимания реализации. Перед защитой используйте разделы 14--17: demo, pitch, вопросы жюри и шпаргалка.
 
-\textbf{Разделение ролей при подготовке:} Глеб ведёт data pipeline, model contracts, demo и технические ответы; Галина ведёт problem story, users/business, city benefit и основную речь. Но каждый должен уметь восстановить весь flow по памяти, объяснить provenance каждого числа и назвать claim boundary.
+\textbf{Роли при подготовке:} технический докладчик ведёт data pipeline, model contracts, demo и технические ответы; основной докладчик --- problem story, users/business, city benefit и связность речи. При этом каждый участник должен уметь восстановить весь flow по памяти, объяснить provenance каждого числа и назвать claim boundary.
 
 \section{Проект за 10 минут}
 \subsection{Проблема}
@@ -449,7 +449,7 @@ Decision & pilot evidence и partner ask & следующий проверяем
 \end{itemize}
 
 \section{Финальная проверка понимания}
-Если вы оба можете без подсказки ответить на пять вопросов, вы готовы: (1) почему zero availability не queue; (2) чем F1 отличается от OSA; (3) почему $\theta$ assumed; (4) как paired Monte Carlo делает сравнение честнее; (5) чем illustrative preview отличается от formal effectiveness result.
+Команда готова к защите, если каждый участник может без подсказки ответить на пять вопросов: (1) почему zero availability не queue; (2) чем F1 отличается от OSA; (3) почему $\theta$ assumed; (4) как paired Monte Carlo делает сравнение честнее; (5) чем illustrative preview отличается от formal effectiveness result.
 
 \vfill
 \small\textit{Guide описывает фактическое состояние репозитория и локальной базы на 10 октября 2026. Числа readiness должны пересчитываться перед записью и презентацией, поскольку collector продолжает добавлять данные. Нормативные детали определяются versioned Markdown contracts в docs/.}
