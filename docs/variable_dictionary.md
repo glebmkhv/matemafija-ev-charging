@@ -265,6 +265,10 @@ milestone. They do not imply that a real payment or user account exists.
 | `generalized_incentive_driver` | policy_defined vector | typed vector | approved concept, not implemented | Versioned price, credit and spatial signals supplied to a policy-independent response model. |
 | `generalized_user_cost` | policy_defined formula; simulated result | normalized index or documented monetary equivalent | approved concept, not implemented | Declared combination of contribution, credit and travel/choice friction. |
 | `policy_robust` | simulated | boolean | approved concept, not implemented | Joint success after scarcity, receiver-site, access/fairness and ledger constraints; stricter than scarcity-only success. |
+| `receiver_eligibility_status` | policy_defined, derived | enum | approved concept, not implemented | `eligible`, `ineligible` or `withheld` for one origin-receiver pair under a versioned gate set. |
+| `receiver_preallocation_available_count` | simulated | EVSE count | approved concept, not implemented | Adaptive projected availability after local transitions and before cross-site allocation at the same timestamp. |
+| `receiver_preallocation_scarcity_ratio` | simulated | ratio `[0,1]` | approved concept, not implemented | `1 - preallocation_available / effective_operational_capacity`; used only when its state evidence is valid. |
+| `origin_receiver_distance_meters` | observed/reconstructed | meters | approved concept, not implemented | Haversine distance from accepted coordinates; not road travel distance. |
 
 The complete product thesis, DAEI separation rule, permitted claims and
 prohibited claims are defined in
@@ -275,6 +279,8 @@ MCU denomination, integer precision, rounding, scenario wallets, partial
 redemption and expiry are defined in [`credit_units.md`](credit_units.md).
 Contribution timing, pool buckets, funding conservation, reserve and subsidy
 semantics are defined in [`credit_pool.md`](credit_pool.md).
+Receiver quality, capacity, equipment, distance, tariff and access gates are
+defined in [`receiver_eligibility.md`](receiver_eligibility.md).
 
 The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
 assumed `theta_arrival` and assumed response delay as separate axes. Replication seed

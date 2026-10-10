@@ -1,6 +1,6 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.4; implementation pending**.
+Status: **approved product and research contract v0.5; implementation pending**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -227,7 +227,8 @@ The approved sequence for the first PLAN milestone is:
    [`credit_units.md`](credit_units.md)**;
 4. contribution-pool formula and accounting modes -- **complete in
    [`credit_pool.md`](credit_pool.md)**;
-5. alternative-site eligibility;
+5. alternative-site eligibility -- **complete in
+   [`receiver_eligibility.md`](receiver_eligibility.md)**;
 6. credit-allocation rule;
 7. generalized policy-independent response contract;
 8. release-response extension;
@@ -247,6 +248,6 @@ provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--4 are complete at the contract level. No code behaviour changes in
-these steps. The next implementation action is to define receiver-site
-eligibility, including data quality, equipment, capacity and spatial gates.
+Steps 1--5 are complete at the contract level. No code behaviour changes in
+these steps. The next implementation action is to define how available pool MCU
+is converted into bounded offers across an immutable eligible choice set.

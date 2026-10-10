@@ -294,4 +294,6 @@ units and lifecycle timing in [`credit_units.md`](credit_units.md). Python event
 classes remain deferred until the receiver and allocation contracts determine
 the remaining required fields. Contribution accrual, pool reserves, reversals
 and optional subsidy are now defined in [`credit_pool.md`](credit_pool.md). The
-next action is to define receiver-site eligibility.
+receiver evaluation states, gates and reason codes are defined in
+[`receiver_eligibility.md`](receiver_eligibility.md). The next action is to
+define the credit-allocation rule.

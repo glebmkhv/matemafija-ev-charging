@@ -41,6 +41,8 @@ for implementation-level definitions.
   rounding, scenario wallets, issuance, partial redemption and expiry.
 - [Contribution pool](credit_pool.md) — contribution accrual, causal funding,
   pool buckets, solvency reserve, subsidy and reversal treatment.
+- [Receiver eligibility](receiver_eligibility.md) — quality, equipment,
+  capacity, spatial, tariff, access and compatibility boundaries.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Policy-independent response contract](response_contract.md) — boundary
