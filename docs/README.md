@@ -37,6 +37,8 @@ for implementation-level definitions.
   for the next implementation milestone.
 - [Credit participants and events](credit_events.md) — logical roles, immutable
   event envelope, contribution/choice/credit state machines and reconciliation.
+- [Mobility-credit unit](credit_units.md) — MCU denomination, integer precision,
+  rounding, scenario wallets, issuance, partial redemption and expiry.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
 - [Policy-independent response contract](response_contract.md) — boundary

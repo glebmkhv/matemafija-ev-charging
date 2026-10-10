@@ -1,6 +1,6 @@
 # Credit-circulation participants and event contract
 
-Status: **approved design contract v0.1; implementation pending**.
+Status: **approved design contract v0.2; implementation pending**.
 
 This document completes step 2 of the credit-circulation implementation plan.
 It defines logical participants, event identities, lifecycle transitions and
@@ -60,9 +60,11 @@ Every credit-circulation event must contain:
 - source trajectory identity and random seed when simulation randomness is used;
 - payload schema version.
 
-Amounts and units become mandatory for accounting events after step 3 defines
-their type. Until then, event names and transitions are fixed but no numeric
-default may be invented.
+Accounting events use non-negative integer `MCU` amounts under
+[`credit_units.md`](credit_units.md). Offer, reservation, issuance, redemption,
+expiry and reversal events must include `amount_mcu` and
+`unit_contract_version`. Evidence and non-accounting choice events do not invent
+amounts.
 
 ### Identity and replay rules
 
@@ -195,7 +197,8 @@ offer_created
   `-- reserved
         |-- reservation_released
         `-- issued
-              |-- redeemed
+              |-- partially_redeemed --> fully_redeemed
+              |-- fully_redeemed
               |-- expired
               `-- reversed
 ```
@@ -210,7 +213,8 @@ Events:
 | `credit_reserved` | `simulated` | Pool amount is atomically committed to the selected offer. |
 | `credit_reservation_released` | `simulated` | Reservation returns to the available pool before issuance. |
 | `credit_issued` | `simulated` | Qualifying simulated action completes and creates credit liability. |
-| `credit_redeemed` | `simulated` | Issued credit is applied under the future redemption rule. |
+| `credit_partially_redeemed` | `simulated` | Positive MCU amount is applied and a positive issuance balance remains. |
+| `credit_fully_redeemed` | `simulated` | Applied MCU amount reduces the issuance balance to zero. |
 | `credit_expired` | `simulated` | Unredeemed issued credit expires under the future lifecycle rule. |
 | `credit_reversed` | `simulated` | Compensating correction to an invalid issuance or redemption; original events remain. |
 
@@ -227,7 +231,7 @@ Forbidden transitions include:
 - redemption before issuance;
 - redemption after expiry or full prior redemption;
 - simultaneous terminal outcomes for one lifecycle;
-- reusing one issuance to fund several redemptions;
+- cumulative redemptions exceeding effective issuance;
 - treating an offer or reservation as user benefit already received.
 
 ## 9. Deterministic event ordering
@@ -279,7 +283,8 @@ it proves internal accounting consistency, not legal settlement correctness.
 ## 11. Step-two acceptance decision
 
 This contract completes step 2 when all subsequent modules use these role and
-event names or introduce a versioned amendment. No Python event classes are
-added in this step because amounts, units and lifecycle timing are fixed in
-step 3. The next action is to define the accounting unit, denomination,
-precision, issuance/redemption semantics and expiry rules.
+event names or introduce a versioned amendment. Step 3 has now fixed amounts,
+units and lifecycle timing in [`credit_units.md`](credit_units.md). Python event
+classes remain deferred until the pool and allocation contracts determine the
+remaining required fields. The next action is to define contribution accrual,
+pool reserves, reversals and optional subsidy semantics.

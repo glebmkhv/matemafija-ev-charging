@@ -248,12 +248,13 @@ milestone. They do not imply that a real payment or user account exists.
 
 | Canonical name | Class | Unit/type | Current status | Definition |
 |---|---|---|---|---|
-| `scarcity_contribution` | policy_defined rule; simulated event | credit unit or currency-qualified amount | approved concept, not implemented | Bounded scenario inflow associated with a qualified scarce origin. It is not a fine or an observed payment. |
-| `incentive_pool_balance` | simulated | credit unit or currency-qualified amount | approved concept, not implemented | Scenario balance available after prior obligations and declared reserves. |
-| `mobility_credit_offer` | simulated | credit unit or currency-qualified amount | approved concept, not implemented | Conditional reward offered for an eligible action; it is neither issuance nor redemption. |
-| `mobility_credit_reservation` | simulated | credit unit or currency-qualified amount | approved concept, not implemented | Temporary scenario commitment pending a qualifying action. |
-| `mobility_credit_issuance` | simulated | credit unit or currency-qualified amount | approved concept, not implemented | Ledger event after a simulated qualifying action; not evidence of a real user balance. |
-| `mobility_credit_redemption` | simulated | credit unit or currency-qualified amount | approved concept, not implemented | Scenario application of issued credit under versioned rules. |
+| `scarcity_contribution` | policy_defined rule; simulated event | integer MCU | approved concept, not implemented | Bounded scenario inflow associated with a qualified scarce origin. It is not a fine or an observed payment. |
+| `incentive_pool_balance` | simulated | integer MCU | approved concept, not implemented | Scenario balance available after prior obligations and declared reserves. |
+| `mobility_credit_offer` | simulated | integer MCU | approved concept, not implemented | Conditional reward offered for an eligible action; it is neither issuance nor redemption. |
+| `mobility_credit_reservation` | simulated | integer MCU | approved concept, not implemented | Temporary scenario commitment pending a qualifying action. |
+| `mobility_credit_issuance` | simulated | integer MCU | approved concept, not implemented | Ledger event after a simulated qualifying action; not evidence of a real user balance. |
+| `mobility_credit_redemption` | simulated | integer MCU | approved concept, not implemented | Partial or full scenario application of issued credit under versioned rules. |
+| `mobility_credit_outstanding` | simulated | integer MCU | approved concept, not implemented | Effective issuance less redemption, expiry and valid reversal for a scenario wallet; never negative. |
 | `redistribution_candidate_count` | simulated | proxy events | approved concept, not implemented | Accepted-start proxies displaced from an origin and passed to the downstream choice layer. It is not a count of observed rejected drivers. |
 | `generalized_incentive_driver` | policy_defined vector | typed vector | approved concept, not implemented | Versioned price, credit and spatial signals supplied to a policy-independent response model. |
 | `generalized_user_cost` | policy_defined formula; simulated result | normalized index or documented monetary equivalent | approved concept, not implemented | Declared combination of contribution, credit and travel/choice friction. |
@@ -264,6 +265,8 @@ prohibited claims are defined in
 [`credit_circulation.md`](credit_circulation.md).
 Logical participants, canonical event names, allowed lifecycle transitions and
 terminal reconciliation are defined in [`credit_events.md`](credit_events.md).
+MCU denomination, integer precision, rounding, scenario wallets, partial
+redemption and expiry are defined in [`credit_units.md`](credit_units.md).
 
 The scenario runner varies `price_intensity_lambda`, assumed `theta_release`,
 assumed `theta_arrival` and assumed response delay as separate axes. Replication seed
