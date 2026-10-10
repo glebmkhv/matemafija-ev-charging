@@ -1,6 +1,6 @@
 # MATEMAFIJA credit-circulation contract
 
-Status: **approved product and research contract v0.6; implementation pending**.
+Status: **approved product and research contract v0.7; implementation pending**.
 
 This document fixes the first step of the credit-circulation development plan.
 It defines what the proposed mechanism means, which claims it permits, and
@@ -231,7 +231,8 @@ The approved sequence for the first PLAN milestone is:
    [`receiver_eligibility.md`](receiver_eligibility.md)**;
 6. credit-allocation rule -- **complete in
    [`credit_allocation.md`](credit_allocation.md)**;
-7. generalized policy-independent response contract;
+7. generalized policy-independent response contract -- **complete in
+   [`response_contract.md`](response_contract.md)**;
 8. release-response extension;
 9. accepted-start extension and redistribution candidates;
 10. credit-sensitive spatial choice;
@@ -249,7 +250,7 @@ provenance separation without an explicit versioned amendment to this contract.
 
 ## 12. Acceptance state
 
-Steps 1--6 are complete at the contract level. No code behaviour changes in
-these steps. The next implementation action is to generalize the
-policy-independent response contract from one scalar price driver to a typed
-vector of contribution, credit and spatial signals.
+Steps 1--7 are complete at the contract level. No code behaviour changes in
+these steps. The next implementation action is to extend the executable release
+response to the typed v2 price plus optional release-credit profile while
+preserving the current alternative-site allocation semantics.

@@ -47,8 +47,9 @@ for implementation-level definitions.
   offer amounts, receiver slots and deterministic pair prioritization.
 - [Common simulator contract](simulator_contract.md) — modes, inputs, events,
   outputs and claim scopes.
-- [Policy-independent response contract](response_contract.md) — boundary
-  between estimated baseline, price signal and assumed response.
+- [Generalized policy-independent response contract](response_contract.md) —
+  typed price, credit and spatial signals; exponential transition profiles;
+  normalized receiver choice and assumption boundaries.
 - [Release response](release_response.md) and [accepted-start response](arrival_response.md)
   — implemented hypothetical response channels.
 - [Simulation grid](simulation_grid.md) — paired common-random-number protocol.

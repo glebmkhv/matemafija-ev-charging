@@ -295,6 +295,8 @@ classes remain deferred until the receiver and allocation contracts determine
 the remaining required fields. Contribution accrual, pool reserves, reversals
 and optional subsidy are now defined in [`credit_pool.md`](credit_pool.md). The
 receiver evaluation states, gates and reason codes are defined in
-[`receiver_eligibility.md`](receiver_eligibility.md). The next action is to
-generalize the response contract using the offer amounts and immutable choice
-sets defined in [`credit_allocation.md`](credit_allocation.md).
+[`receiver_eligibility.md`](receiver_eligibility.md). Allocation amounts and
+immutable choice sets are defined in
+[`credit_allocation.md`](credit_allocation.md), and their behavioural boundary
+is now fixed in [`response_contract.md`](response_contract.md). The next action
+is the executable v2 release-response extension.
