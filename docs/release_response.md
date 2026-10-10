@@ -1,11 +1,15 @@
 # Release response channel
 
-Status: **implemented assumption-driven mechanism v1.0.0**.
+Status: **implemented v1.0.0 compatibility profile and typed v2.0.0 profile**.
 
 The release response is the first implemented behavioural
 response channel. The implementation is in `src/release_response.py` and
 instantiates the policy-independent boundary defined in
 `docs/response_contract.md`.
+
+The original scalar profile remains available without changed semantics. The
+v2 profile adds separate typed price and optional release-credit terms; it does
+not reinterpret historical v1 results.
 
 ## 1. Scope
 
@@ -104,3 +108,65 @@ The separate accepted-start proxy is documented in `arrival_response.md`;
 spatial allocation is a separate downstream assumption layer; queue/idle
 inference and claims that the assumed response is true in Vilnius remain
 excluded.
+
+## 8. Typed v2 profile
+
+The executable v2 form is:
+
+```text
+h_release,2 = h_release,0 * exp(
+    theta_release_price * delayed_origin_price_contribution_rate
+  + theta_release_credit * delayed_release_credit_offer
+)
+```
+
+The terms retain different units:
+
+- price signal: `EUR/min`, sensitivity: `min/EUR`;
+- release-credit signal: integer `MCU`, sensitivity: `1/MCU`;
+- each term has its own non-negative integer-minute delay.
+
+`TypedResponseSignalPoint` records signal identity, unit, state, source event,
+timestamp, contract version and provenance. Price signals require
+`policy_defined` provenance; release-credit offers require `simulated`
+provenance. Signal states are `available`, `not_applicable` and `withheld`.
+Only an available signal has a numeric value.
+
+The result reports price and credit exponent components separately, as well as
+their total, multiplier, hazards and probabilities. This makes it possible to
+audit which assumed mechanism changed the transition.
+
+## 9. Initial credit applicability
+
+The current allocation contract funds alternative-site credits, not a reward
+for releasing an occupied EVSE. Consequently the initial production scenario
+uses:
+
+```text
+release_credit_applicable = false
+theta_release_credit = 0
+```
+
+The executable optional term exists for a future explicitly approved and
+funded release-credit policy. An active credit signal cannot be silently ignored
+by a profile marked non-applicable, and an alternative-site offer cannot be
+copied into this channel.
+
+## 10. Compatibility and validation
+
+`typed_price_signal_from_v1` maps the existing policy-integration driver to the
+canonical v2 price name while preserving value, timestamp and provenance.
+Withheld remains withheld.
+
+The v2 implementation additionally rejects:
+
+- negative price/credit signals or sensitivities;
+- fractional MCU;
+- unit, name, provenance or entity mismatch;
+- duplicate signal timestamps;
+- missing delayed signals;
+- non-applicable credit profiles carrying active credit;
+- withheld signals treated as numeric zero;
+- unsafe exponential values.
+
+The function remains deterministic and does not draw or mutate state.

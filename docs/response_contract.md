@@ -1,10 +1,11 @@
 # Generalized policy-independent response contract
 
-Status: **approved contract v2.0; typed-vector implementation pending**.
+Status: **approved contract v2.0; release profile implemented, remaining typed profiles pending**.
 
 This document completes step 7 of the credit-circulation plan. It generalizes
 the implemented scalar price-response boundary without changing the existing
-v1 release and charging-start code. Steps 8--10 will implement the v2 profiles.
+v1 release and charging-start code. Step 8 has implemented the v2 release
+profile; steps 9--10 implement accepted-start and receiver choice.
 
 The contract answers one question: given a qualified baseline process, a set of
 policy outputs and explicit behavioural assumptions, how may the simulator
@@ -290,6 +291,7 @@ hazard profiles; alternative selection is a separate normalized choice profile
 with an explicit outside outcome. Policy construction, behavioural assumptions,
 random draws, capacity reservation and accounting remain distinct layers.
 
-Step 8 may now extend the executable release response to the v2 price plus
-optional release-credit profile without changing the current alternative-site
-credit allocation semantics.
+The executable release response now supports the v2 price plus optional
+release-credit profile without changing the current alternative-site credit
+allocation semantics. Step 9 may extend accepted-start processing and emit
+conserved redistribution candidates.

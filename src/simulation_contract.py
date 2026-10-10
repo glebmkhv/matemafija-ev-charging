@@ -49,6 +49,12 @@ class ResponseMonotonicity(str, Enum):
     UNRESTRICTED = "unrestricted"
 
 
+class ResponseSignalState(str, Enum):
+    AVAILABLE = "available"
+    NOT_APPLICABLE = "not_applicable"
+    WITHHELD = "withheld"
+
+
 class EventType(str, Enum):
     OBSERVED_SNAPSHOT = "observed_snapshot"
     OBSERVED_STATUS_TRANSITION = "observed_status_transition"
@@ -466,6 +472,51 @@ class ResponseDriverPoint:
             raise ValueError("Active response driver value must be finite numeric")
         if self.provenance is not ProvenanceClass.POLICY_DEFINED:
             raise ValueError("Response driver must have policy-defined provenance")
+
+
+@dataclass(frozen=True)
+class TypedResponseSignalPoint:
+    """One versioned signal that retains its own unit, state and provenance."""
+    entity_id: str
+    effective_at_utc: datetime
+    signal_name: str
+    signal_unit: str
+    state: ResponseSignalState
+    value: float | int | None
+    source_event_id: str
+    contract_version: str = "2.0"
+    reason_code: str | None = None
+    provenance: ProvenanceClass = ProvenanceClass.POLICY_DEFINED
+
+    def validate(
+        self,
+        *,
+        expected_name: str,
+        expected_unit: str,
+        allowed_provenance: tuple[ProvenanceClass, ...],
+    ):
+        if not self.entity_id or not self.source_event_id or not self.contract_version:
+            raise ValueError("Typed response signal identity is incomplete")
+        if self.effective_at_utc.tzinfo is None:
+            raise ValueError("Typed response signal timestamp must include a timezone")
+        if self.signal_name != expected_name or self.signal_unit != expected_unit:
+            raise ValueError("Typed response signal name or unit does not match its profile")
+        if not isinstance(self.state, ResponseSignalState):
+            raise ValueError("Typed response signal state is invalid")
+        if self.provenance not in allowed_provenance:
+            raise ValueError("Typed response signal provenance is not permitted")
+        if self.state is ResponseSignalState.AVAILABLE:
+            if self.reason_code is not None:
+                raise ValueError("Available response signal cannot carry a withholding reason")
+            if (self.value is None or isinstance(self.value, bool)
+                    or not isinstance(self.value, (int, float))
+                    or not math.isfinite(self.value)):
+                raise ValueError("Available response signal requires a finite numeric value")
+        else:
+            if self.value is not None or not self.reason_code:
+                raise ValueError(
+                    "Non-available response signal requires no value and an explicit reason"
+                )
 
 
 @dataclass(frozen=True)
