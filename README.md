@@ -221,3 +221,8 @@ or sharing a collected database.
 
 The software in this repository is available under the
 [MIT License](LICENSE). Copyright (c) 2026 MATEMAFIJA team.
+
+## Team
+
+- Gleb Mokhov — mathematical modelling, data architecture and simulation
+- Halina Vatsenka — mathematical modelling, policy concept and presentation
