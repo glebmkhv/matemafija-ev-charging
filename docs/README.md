@@ -1,13 +1,13 @@
 # Documentation map
 
 This directory contains the technical contracts behind the MATEMAFIJA project
-guide. Read the [full guide](../output/pdf/matemafija_project_guide.pdf) first
+guide. Read the [English public guide](../output/pdf/matemafija_project_guide_en.pdf) first
 for the integrated architecture and presentation story; use the documents below
 for implementation-level definitions.
 
-The normative contracts and public repository entry point are in English. The
-integrated guide and supplementary mathematical explainer are in Russian; both
-are public explanatory material and do not override the versioned contracts.
+The normative contracts, public repository entry point and primary guide are in
+English. The Russian guide and supplementary mathematical explainer remain
+public explanatory material and do not override the versioned contracts.
 
 ## Evidence layer
 
@@ -87,7 +87,9 @@ are public explanatory material and do not override the versioned contracts.
   reconciliation, verification evidence and remaining publication/pilot gates.
 - [Data and modelling assumptions](assumptions.md)
 - [Pitch narrative and demo sequence](pitch_narrative.md)
-- `matemafija_project_guide.tex` — editable source for the public PDF guide.
+- `matemafija_project_guide_en.tex` — editable source for the primary English
+  public PDF guide.
+- `matemafija_project_guide.tex` — editable source for the Russian public guide.
 - `matemafija_explained_guide.tex` — Russian-language supplementary explanation
   of the transition and response model; source only, not a separate normative
   contract.

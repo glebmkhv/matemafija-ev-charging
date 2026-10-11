@@ -56,7 +56,7 @@ OCPI + DATEX evidence
   → bounded pilot recommendation
 ```
 
-The same sequence is used by the README, project guide, pitch narrative,
+The same sequence is used by the README, English and Russian project guides, pitch narrative,
 Policy Lab and technical contracts. MCU remains a simulated mobility-credit
 accounting unit. It is not money, deployed cashback or DAEI; DAEI is only a
 Lithuanian precedent and possible future integration path.

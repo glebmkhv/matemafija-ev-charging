@@ -1,0 +1,765 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\setsansfont{Arial}
+\setmonofont{Arial}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\usepackage{geometry,amsmath,amssymb,booktabs,longtable,tabularx,array,enumitem,xcolor,hyperref,fancyhdr,tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\geometry{margin=18mm}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,urlcolor=blue!65!black}
+\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\definecolor{navy}{HTML}{17365D}
+\definecolor{teal}{HTML}{167D8D}
+\definecolor{pale}{HTML}{EEF5F7}
+\definecolor{warn}{HTML}{8A4B08}
+\definecolor{good}{HTML}{287A4A}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{MATEMAFIJA}
+\rhead{Project Guide}
+\cfoot{\thepage}
+\newcommand{\term}[1]{\textbf{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\boxtext}[1]{\vspace{2mm}\noindent\fcolorbox{teal}{pale}{\parbox{0.94\linewidth}{#1}}\vspace{2mm}}
+\newcommand{\warntext}[1]{\vspace{2mm}\noindent\fcolorbox{warn}{orange!5}{\parbox{0.94\linewidth}{#1}}\vspace{2mm}}
+
+\title{\vspace{-1cm}\textbf{MATEMAFIJA}\\[3mm]
+\Large Complete Project and Presentation Guide\\[2mm]
+\large Hack4Vilnius EV Charging Policy Lab}
+\author{MATEMAFIJA team}
+\date{English public edition 4.0 --- 11 October 2026}
+
+\begin{document}
+\maketitle
+
+\boxtext{\textbf{The central idea.} MATEMAFIJA does not promise that a new price or credit will automatically remove congestion. It is a \textbf{policy stress-testing digital twin}: using real OCPI and DATEX observations, it identifies the declared price-and-credit response conditions under which a balanced contribution-to-credit policy passes system, redistribution, user-proxy and accounting safeguards. It then turns the remaining uncertainty into a measurable city pilot.}
+
+\tableofcontents
+\newpage
+
+\section{How to use this guide}
+
+Read Sections 2--5 first for the ten-minute explanation. Sections 6--14 explain the evidence, policy and simulator. Sections 15--17 slow down the most difficult part --- one-step projection, MCU circulation and spatial redistribution --- and build it from a concrete example. Sections 18--22 support the demo, pitch and jury discussion.
+
+\textbf{Preparation roles.} The technical presenter should lead the data pipeline, model contracts, demo and technical answers. The principal presenter should lead the problem story, users, city benefit and narrative continuity. Every team member should still be able to reconstruct the full flow, explain the provenance of every number and state the claim boundary.
+
+\section{The project in ten minutes}
+
+\subsection{The problem}
+
+Public charging infrastructure can periodically reach zero availability. However, the available public data do not observe a physical queue, individual waiting time, charging-completion time or post-charge idle time. The proposed adaptive policy has not yet been deployed, so its behavioural effect is not known either.
+
+The wrong response would be to invent the missing variables or report a simulated effect as a measured one. MATEMAFIJA instead asks a conditional decision question:
+
+\begin{quote}
+Under which explicit price, credit, delay and spatial-choice assumptions can the proposed budget-constrained policy improve observable scarcity? Can it do so without suppressing accepted use, transferring scarcity to receiver sites or breaking access and accounting safeguards?
+\end{quote}
+
+\subsection{What we built}
+
+We organised real OCPI and DATEX observations, corrected timestamp semantics, reconstructed EVSE state intervals, created flow and historical time series, defined observable scarcity metrics, replayed the actual OCPI tariff as baseline F1 and created the OSA-v1 scarcity signal.
+
+Above that evidence layer, we designed a balanced contribution-to-credit mechanism. Prior-funded mobility-credit units (MCU) can support a driver's choice of a qualified receiver site. Fixed and adaptive scenarios share the same baseline path and random numbers. The result is a joint observable robustness map, not a single optimistic forecast.
+
+\subsection{What the city receives}
+
+The city does not receive a claim that one exact price should be deployed tomorrow. It receives:
+\begin{itemize}
+\item a reproducible evidence pipeline;
+\item a transparent candidate policy;
+\item a map of conditions under which that policy remains acceptable;
+\item an explicit list of failure modes and missing evidence;
+\item a bounded pilot design that can replace assumptions with measured Vilnius effects.
+\end{itemize}
+
+\subsection{Who uses it and who pays}
+
+The daily beneficiary is a driver offered a practical alternative and a bounded incentive. The operational user is a charging operator testing network utilisation, receiver capacity and fundability. The first realistic customer is a city--CPO partnership using the tool for policy analysis and a controlled pilot.
+
+The current product is decision support and pilot design, not a consumer wallet. Funding source, operator liability, cross-operator acceptance and settlement must be agreed before any real value is issued.
+
+\section{Architecture and messages between blocks}
+
+\begin{center}
+\begin{tikzpicture}[node distance=5mm,every node/.style={font=\small},b/.style={draw,rounded corners,fill=pale,text width=12.8cm,align=center,minimum height=8mm},arr/.style={-{Stealth},thick,teal}]
+\node[b](raw){OCPI + DATEX: locations, EVSE, connectors, statuses, tariffs, timestamps};
+\node[b,below=of raw](db){SQLite v2: source-native records, snapshots, relationships, provenance};
+\node[b,below=of db](state){Reconstruction: state intervals $\rightarrow$ flow/historical series $\rightarrow$ scarcity statistics};
+\node[b,below=of state](base){Baseline: F1 tariff replay + empirical transition hazards + observed/bootstrap paths};
+\node[b,below=of base](policy){OSA-v1 signal + contribution pool + funded MCU alternatives};
+\node[b,below=of policy](response){Assumed response: release, accepted start, credit/distance choice and delay};
+\node[b,below=of response](sim){Paired Monte Carlo + safety + append-only MCU/capacity ledger};
+\node[b,below=of sim](out){System + redistribution + user-proxy + accounting $\rightarrow$ joint robustness};
+\foreach \a/\b in {raw/db,db/state,state/base,base/policy,policy/response,response/sim,sim/out}\draw[arr](\a)--(\b);
+\end{tikzpicture}
+\end{center}
+
+The blocks exchange different kinds of information:
+\begin{itemize}
+\item raw data report source facts;
+\item reconstruction reports defensible derived features;
+\item policy reports a scarcity signal and MCU rules;
+\item the response model reports conditional behavioural mechanisms;
+\item the simulator reports possible states and ledger events;
+\item evaluation reports separate domain outcomes.
+\end{itemize}
+
+No block is allowed to rename an assumption as an observation.
+
+\section{Data, identity and provenance}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{2.8cm}X p{4.1cm}}
+\toprule Class & Meaning & Example \\\midrule
+observed & obtained directly from a source & OCPI status, timestamp, tariff element \\
+reconstructed & deterministically derived from observations & state interval, availability ratio \\
+estimated & statistically estimated after a quality gate & empirical transition hazard \\
+policy-defined & a normative experiment or decision setting & grace period, adjustment cap \\
+assumed & an unknown scenario hypothesis & price/credit sensitivity, delay \\
+simulated & generated under a model and scenario & counterfactual EVSE counts \\
+\bottomrule
+\end{tabularx}
+
+OCPI provides the location--EVSE--connector structure, current status and component tariffs. DATEX II supplies independent infrastructure context and corroboration. Source-native records remain separate; a cross-source mapping must retain confidence and review status.
+
+All timestamps are stored as timezone-aware UTC. Calendar features are calculated in \code{Europe/Vilnius}. A naive OCPI timestamp is interpreted as Vilnius local time and converted to UTC. A collection gap is never interpreted as zero demand.
+
+\boxtext{\textbf{Database snapshot used by this guide (10 October 2026, approximately 17:47 EEST):} 2,836,399 OCPI EVSE-status observations; 1,984 current OCPI location records; 1,707 tariffs; 5,900 tariff assignments; 4.08 days of history. Records whose city contains Vilnius include 892 locations and 2,120 EVSE, of which 1,331 were available and 180 charging in the current snapshot. These are provider records, not a count of unique physical stations. Recompute the figures before presenting because collection continues.}
+
+The formal transition gate requires seven qualified local days. At this snapshot the formal effectiveness heatmap is locked. The interface may show a permanently labelled illustrative scenario preview. That preview is driven by declared assumptions; it is not evidence, a Vilnius effect estimate or a forecast.
+
+\section{Terms without jargon}
+
+\begin{longtable}{p{3.8cm}p{12.2cm}}
+\toprule Term & Plain meaning \\\midrule\endhead
+station/site/location & a physical charging place; OCPI Location is the primary site identity in the MVP. \\
+EVSE & the controllable charging unit and the model's capacity unit. \\
+connector & a physical plug belonging to an EVSE; connector count is not concurrent capacity. \\
+snapshot & the observed status picture at one moment. \\
+state interval & a reconstructed period during which a state did not change. \\
+proxy & a measurable substitute for an unobserved concept, not an identity. \\
+scarcity & insufficient available operational capacity, not an observed queue. \\
+baseline & the factual or empirical reference before the new policy. \\
+hazard & a conditional transition intensity for the next time step. \\
+counterfactual & what could happen under another policy; here a scenario, not a fact. \\
+$\lambda$ & adjustment intensity from 0 to 1. \\
+$\kappa$ & coverage: the share of sites or EVSE included in policy. \\
+$R_i^{rollout}(t)$ & whether policy is deployed at site $i$ at time $t$. \\
+$\theta_r,\theta_a$ & assumed release and accepted-start sensitivities. \\
+$\tau$ & assumed response delay. \\
+paired experiment & fixed and adaptive arms receive the same baseline and random numbers. \\
+Monte Carlo & repeated stochastic runs used to inspect the outcome distribution. \\
+Wilson bound & a conservative confidence bound for a success proportion. \\
+spatial spillover & scarcity transferred to a nearby receiver site. \\
+MCU & integer mobility-credit unit for scenario accounting; not money or DAEI. \\
+observable-policy robust & joint success within implemented observable gates only. \\
+\bottomrule
+\end{longtable}
+
+\section{From snapshots to observable scarcity}
+
+For site $i$ at time $t$:
+\[
+A_i(t)=\frac{\text{available EVSE}}{\text{effective operational capacity}},
+\qquad
+C_i(t)=1-A_i(t).
+\]
+
+$C_i$ is the operational scarcity ratio. Zero availability is eligible as evidence only when capacity is positive, coverage is sufficient and the snapshot passes quality rules. Equipment unavailability is measured separately, because a broken station must not automatically activate a demand-scarcity mechanism.
+
+The evidence outputs include mean availability, operational scarcity, the share of qualified snapshots with zero availability, observed/stateful episode duration and release/start proxy rates. The project never calls $A=0$ an observed queue.
+
+\section{F1: the real fixed baseline}
+
+\term{F1 observed tariff replay} preserves the structure of the OCPI tariff: \code{ENERGY}, \code{TIME}, \code{PARKING\_TIME}, \code{FLAT}, restrictions, VAT and currency. DATEX pricing is corroboration, not a hidden replacement for OCPI.
+
+A tariff cannot generally be collapsed into a single EUR/min number. A complete bill requires Session/CDR or metered quantities such as kWh, charging duration and parking duration. When these are unavailable, MATEMAFIJA shows the mechanism and withholds the total instead of inventing it.
+
+\section{OSA-v1: the adaptive policy signal}
+
+OSA-v1 keeps the original idea of pressure, grace and a nonlinear bounded adjustment, but replaces the unobserved queue $Q$ and post-charge idle time with data-grounded variables:
+\[
+P_i(t)=\operatorname{clip}\!\left(
+\frac{C_i(t)-C_{trigger}}{1-C_{trigger}},0,1
+\right),
+\]
+\[
+R_i^{persistence}(t)=\operatorname{clip}\!\left(
+\frac{D_i(t)-T_{grace}}{T_{ramp}},0,1
+\right),
+\]
+\[
+S_i(t)=P_i(t)^\gamma R_i^{persistence}(t),
+\qquad
+\Delta p_{raw}(i,t)=\Delta p_{max}S_i(t).
+\]
+
+$D_i(t)$ is a reconstructed lower-bound duration of a continuous qualifying scarcity condition. It is not vehicle idle time. A snapshot continues the condition only if:
+\begin{enumerate}
+\item coverage is at least 0.80, capacity is positive and availability is defined;
+\item $C_i(t)>C_{trigger}$;
+\item at least one EVSE is \code{CHARGING};
+\item equipment-unavailable share is not above 0.50;
+\item the gap from the previous snapshot is no more than two expected cadences (10 minutes in the MVP).
+\end{enumerate}
+
+If $t_i^{start}$ is the first timestamp of the uninterrupted qualifying sequence:
+\[
+D_i(t)=\frac{t-t_i^{start}}{60\ \text{seconds}}
+\]
+in minutes. Any failed condition, ineligible snapshot or excessive gap resets the episode.
+
+MVP parameters are $C_{trigger}=0.50$, $T_{grace}=15$ min, $T_{ramp}=30$ min, $\gamma=1.2$ and $\Delta p_{max}=0.05$ EUR/min. They are versioned test-policy values, not optimised Vilnius parameters.
+
+The final response driver is:
+\[
+d_i(t)=R_i^{rollout}(t)\lambda\Delta p_{raw}(i,t).
+\]
+
+Intensity $\lambda$, coverage $\kappa$ and rollout $R_i^{rollout}(t)$ are separate. The policy returns \code{active}, \code{inactive} or \code{withheld}. Withheld means insufficient grounds for a decision; it does not mean a measured zero effect.
+
+\section{Three simulator modes}
+
+\begin{itemize}
+\item \code{observed\_replay}: applies the pricing mechanism to the observed path without behavioural response. Allowed claim: mechanism only.
+\item \code{assumption\_driven\_counterfactual}: changes transitions through explicit response parameters. Allowed claim: scenario conditional.
+\item \code{validated\_counterfactual}: future mode after external or pilot validation. Allowed claim: bounded counterfactual effect.
+\end{itemize}
+
+Current policy-effect outputs belong to the assumption-driven mode.
+
+\section{Baseline transitions and trajectory generators}
+
+Qualified history supplies two proxy transitions:
+\begin{itemize}
+\item \code{charging -> available}: release proxy;
+\item \code{available -> charging}: accepted-start proxy.
+\end{itemize}
+
+They are stratified by local weekday/hour with fallback from station to cluster to network. The hazard estimate is:
+\[
+\widehat h_b=\frac{E_b}{Y_b},
+\]
+where $E_b$ is the number of uncensored events and $Y_b$ is exposure hours in stratum $b$. For a step $\Delta t$ hours:
+\[
+q_b=1-e^{-\widehat h_b\Delta t}.
+\]
+
+Readiness gates are explicit: descriptive use requires at least 48 hours; historical-profile modelling requires at least seven local days, two states, 40 complete uncensored intervals and 20 transitions in each direction; F1 replay also requires resolvable current tariffs. Counterfactual simulation additionally requires compatible policy and response contracts.
+
+Two generators preserve different parts of reality:
+\begin{itemize}
+\item observed-path replay preserves the exact recorded sequence;
+\item local-day block bootstrap resamples complete local days, preserving within-day peaks and autocorrelation better than independent draws.
+\end{itemize}
+
+\section{Response channels: what price can change in the model}
+
+For release:
+\[
+h^{release}_{1,i}(t)
+=h^{release}_{0,i}(t)
+\exp\!\left(\theta_r d_i(t-\tau)\right).
+\]
+
+For accepted start:
+\[
+h^{start}_{1,i}(t)
+=h^{start}_{0,i}(t)
+\exp\!\left(-\theta_a d_i(t-\tau)\right).
+\]
+
+The first formula expresses the hypothesis that a positive signal increases the conditional release intensity. The second allows the signal to reduce accepted starts at the origin. Both are hypotheses, not fitted Vilnius elasticities.
+
+Hazard is converted to event probability by:
+\[
+q=1-e^{-h\Delta t}.
+\]
+
+An improvement caused only by fewer accepted starts cannot be reported as success. The model must preserve the difference as displaced/deferred-use candidates and pass it into the spatial layer.
+
+$\theta_r$, $\theta_a$ and $\tau$ have provenance \code{assumed}. With a zero driver or zero sensitivity, adaptive must be identical to fixed; tests enforce this identity.
+
+\section{One-step projection, explained from first principles}
+
+\subsection{Two state buckets}
+
+Imagine one site with seven operational EVSE. At the current timestamp:
+\[
+A=3\quad\text{available},
+\qquad
+C=4\quad\text{charging}.
+\]
+
+On the next five-minute step, two kinds of events matter:
+\begin{itemize}
+\item a \term{release} moves one EVSE from charging to available;
+\item a \term{start} moves one EVSE from available to charging.
+\end{itemize}
+
+If two releases and one start occur:
+\[
+A'=A+N_r-N_s=3+2-1=4,
+\]
+\[
+C'=C-N_r+N_s=4-2+1=3.
+\]
+
+No EVSE appears or disappears:
+\[
+A'+C'=A+C=7.
+\]
+
+Physical bounds require $0\le N_s\le A$, $0\le N_r\le C$ and non-negative projected counts.
+
+\subsection{Why it is a projection, not a forecast}
+
+$A'$ and $C'$ are not a new OCPI observation. They are the immediate conditional consequence of simulated events. The current implementation does not feed them forward into a full sequence:
+\[
+(A_t,C_t)\longrightarrow(A'_t,C'_t),
+\]
+not
+\[
+(A_t,C_t)\to(A_{t+1},C_{t+1})\to(A_{t+2},C_{t+2})\to\cdots.
+\]
+
+It can therefore compare immediate availability and scarcity, but it does not calculate counterfactual episode duration.
+
+\subsection{Why the experiment is paired}
+
+For every possible transition and replication, both arms use the same draw:
+\[
+U_{i,t,r}\sim\mathrm{Uniform}(0,1).
+\]
+\[
+E^{fixed}_{i,t,r}=\mathbf{1}\{U_{i,t,r}<q_0\},
+\qquad
+E^{adaptive}_{i,t,r}=\mathbf{1}\{U_{i,t,r}<q_1\}.
+\]
+
+If $U=0.06$, $q_0=0.05$ and $q_1=0.09$, fixed has no event while adaptive has one. The difference comes from the probability change, not from unrelated randomness.
+
+For a shared metric:
+\[
+\Delta M=M_{adaptive}-M_{fixed}.
+\]
+Negative is favourable for zero-availability share and operational scarcity; positive is favourable for mean availability.
+
+\subsection{The candidate that must not disappear}
+
+If fixed accepts two start proxies while adaptive accepts one:
+\[
+N_{candidate}
+=\max(0,N_s^{fixed}-N_s^{adaptive})=1.
+\]
+
+This candidate is an integer unit of simulated displaced-use accounting. It is not an identified person or observed trip. It must end in exactly one of two outcomes:
+\[
+N_{candidate}=N_{receiver\ selected}+N_{outside}.
+\]
+
+Without this identity, a model could appear successful simply by deleting use.
+
+\section{MCU circulation: value cannot appear from nowhere}
+
+\subsection{What MCU represents}
+
+One MCU is a policy-defined reference of 0.01 EUR-equivalent eligible charging service. MCU is an integer scenario-accounting unit, not legal tender, a deployed wallet balance, cashback or DAEI.
+
+In unit-accounting mode, Session/CDR duration is not invented. A reference interval $q_{ref}=5$ min is used:
+\[
+c_i^{MCU}(t)=\operatorname{round\_half\_up}
+\left(d_i(t)q_{ref}100\right).
+\]
+
+At $d_i=0.03$ EUR/min:
+\[
+c_i^{MCU}=\operatorname{round\_half\_up}(0.03\cdot5\cdot100)=15.
+\]
+
+A quote does not create funding. Only a completed simulated origin service can create future inflow; a current offer must be financed from the prior pool.
+
+\subsection{Four ledger buckets}
+
+Think of the pool as four labelled compartments:
+\begin{itemize}
+\item $A$: available MCU;
+\item $R$: reserved MCU promised to a selected opportunity;
+\item $O$: outstanding MCU issued after simulated service start;
+\item $S$: settled MCU after redemption.
+\end{itemize}
+
+After every event:
+\[
+\boxed{F=A+R+O+S},
+\]
+where $F$ is the total funded amount.
+
+Starting from $(A,R,O,S)=(100,0,0,0)$, a 20-MCU lifecycle is:
+\[
+\begin{array}{rcl}
+\text{offer shown} &: &(100,0,0,0),\\
+\text{reservation} &: &(80,20,0,0),\\
+\text{issuance} &: &(80,0,20,0),\\
+\text{redemption} &: &(80,0,0,20).
+\end{array}
+\]
+
+An offer is information, not a balance movement. A cancelled reservation returns to available. The identity remains 100 throughout.
+
+\subsection{Reserve and offerable amount}
+
+For reserve ratio $\rho$:
+\[
+R_{target}=\left\lceil\rho(A+R+O)\right\rceil,
+\]
+\[
+MCU_{offerable}=\max(0,A-R_{target}).
+\]
+
+With 100 available MCU and $\rho=0.10$, reserve target is 10 and at most 90 MCU are offerable. An offer is bounded by requested amount, policy cap and offerable pool:
+\[
+c_{offer}=\min(c_{requested},c_{cap},MCU_{offerable}).
+\]
+
+\subsection{Atomic reservation}
+
+MCU and one receiver-capacity unit are reserved together only when:
+\[
+MCU_{offerable}\ge c_{offer}
+\quad\land\quad
+K_j^{remaining}\ge1
+\quad\land\quad
+\text{safety gates pass}.
+\]
+
+If either resource is unavailable, neither state changes. This prevents double spending and phantom capacity.
+
+\section{Receiver choice and spatial redistribution}
+
+\subsection{Choice with an outside option}
+
+For opportunity $o$ and qualified receiver $j$:
+\[
+V_{oj}=\beta_c c_{oj}-\beta_d d_{oj}+\beta_A A_j.
+\]
+
+$c_{oj}$ is the funded offer, $d_{oj}$ is straight-line distance and $A_j$ is availability shown to the user. The coefficients are assumed, not observed.
+
+The multinomial-logit probability includes an outside option with utility zero:
+\[
+P(j\mid o)=\frac{e^{V_{oj}}}{1+\sum_{k\in J_o}e^{V_{ok}}},
+\qquad
+P(outside\mid o)=\frac{1}{1+\sum_{k\in J_o}e^{V_{ok}}}.
+\]
+
+Therefore:
+\[
+P(outside\mid o)+\sum_{j\in J_o}P(j\mid o)=1.
+\]
+
+If $V_1=1.0$ and $V_2=0.2$, then approximately $P_1=0.55$, $P_2=0.25$ and $P_{outside}=0.20$. The model never forces a receiver choice.
+
+Direct availability effect is disabled by default ($\beta_A=0$) so that availability is not counted once as an eligibility guard and again as a perceived benefit unless the interface actually exposes it.
+
+\subsection{Selection is not reservation}
+
+After a stochastic selection, safety is checked again: expiry, MCU cap, current offerable pool, distance, current availability, capacity and minimum residual capacity. Thus:
+\[
+\text{shown}\ne\text{selected}\ne\text{reserved}
+\ne\text{started}\ne\text{issued}\ne\text{redeemed}.
+\]
+
+These stages are stored as append-only events; replay must recover the same lifecycle and balances.
+
+\subsection{Receiver eligibility and distance}
+
+A receiver differs from the origin, has coordinates, lies within a policy-defined distance gate and has operational capacity. Haversine distance for coordinates $(\varphi_1,\lambda_1)$ and $(\varphi_2,\lambda_2)$ is:
+\[
+a=\sin^2\!\left(\frac{\Delta\varphi}{2}\right)
++\cos\varphi_1\cos\varphi_2
+\sin^2\!\left(\frac{\Delta\lambda}{2}\right),
+\]
+\[
+d=2R_{earth}\arcsin(\sqrt a),
+\qquad R_{earth}\approx6371\ \text{km}.
+\]
+
+This is straight-line distance, not road distance or travel time. Connector/power compatibility, accessibility, cross-operator acceptance and full session cost remain warnings or explicit inputs when data are missing.
+
+\subsection{Capacity and conservation}
+
+The legacy allocator defines:
+\[
+K_j^{usable}(t)=\left\lfloor A_j^{count}(t)f_{capacity}\right\rfloor,
+\qquad f_{capacity}\in[0,1].
+\]
+
+For every receiver:
+\[
+N_{allocated,j}\le K_j^{usable},
+\qquad
+A_j^{after}=A_j^{before}-N_{allocated,j}\ge K_j^{residual}.
+\]
+
+If a receiver has two available EVSE and policy requires one residual unit, only one candidate can be safely reserved. A second candidate sees the updated state and must select another safe alternative or remain outside.
+
+Two compatible mechanisms answer different questions:
+\begin{enumerate}
+\item the legacy nearest-first capacity allocator asks what physical redistribution is possible;
+\item the current credit-sensitive path asks what happens under explicit funded credit/distance response assumptions.
+\end{enumerate}
+
+Nearest-first is not evidence of user choice.
+
+\section{Four-domain evaluation and joint robustness}
+
+\subsection{Four independent examinations}
+
+\begin{longtable}{>{\bfseries}p{3.1cm}p{8.4cm}p{3.5cm}}
+\toprule Domain & What is evaluated & What it cannot prove \\\midrule\endhead
+System & $\Delta$ zero availability, $\Delta$ mean availability, $\Delta$ operational scarcity, release and displaced-start proxies & queue or causal effect \\
+Redistribution & offers, selections, outside outcomes, realised share, capacity consumed, residual blocks & observed trips \\
+User proxy & proposed/selected MCU, straight-line distance, unresolved warnings & welfare or travel time \\
+Accounting & funded, available, reserved, outstanding, settled, issuance, redemption and reconciliation & legal settlement \\
+\bottomrule
+\end{longtable}
+
+Joint success is conjunctive:
+\[
+G_{joint}=G_{system}\land G_{redistribution}
+\land G_{user}\land G_{accounting}.
+\]
+
+Per replication:
+\[
+\begin{cases}
+\text{failure}, & \text{at least one gate fails};\\
+\text{not\_evaluable}, & \text{no failure, but at least one evidence gap};\\
+\text{success}, & \text{all four gates pass}.
+\end{cases}
+\]
+
+A strong system effect cannot compensate for receiver overload, an impractical distance proxy or a broken ledger.
+
+\subsection{Why many replications are required}
+
+If $x$ of $n$ valid paired replications succeed:
+\[
+\widehat p=\frac{x}{n}.
+\]
+
+The conservative 95\% Wilson lower bound, with $z=1.96$, is:
+\[
+L_W=
+\frac{
+\widehat p+\frac{z^2}{2n}
+-z\sqrt{\frac{\widehat p(1-\widehat p)}{n}+\frac{z^2}{4n^2}}
+}{1+\frac{z^2}{n}}.
+\]
+
+The current scenario criterion is:
+\[
+n_{valid}\ge20,
+\qquad
+share_{not\ evaluable}\le0.20,
+\qquad
+L_W\ge0.80.
+\]
+
+At $20/20$ successes, $\widehat p=1$ but $L_W\approx0.839$, so the scenario passes. At $19/20$, $\widehat p=0.95$ but $L_W\approx0.764$, so it does not. Twenty is a minimum sample size, not an automatic pass.
+
+\boxtext{\code{observable\_policy\_robust=true} means only that all implemented observable gates pass robustly within the declared scenario and assumed response model. It does not mean that user welfare, demographic fairness, real-world causality or pilot readiness has been validated.}
+
+\section{End-to-end numerical walkthrough}
+
+Follow one scenario from the initial snapshot to the decision:
+
+\begin{enumerate}
+\item Origin state: $A=3$, $C=4$.
+\item Fixed events: releases $=1$, starts $=2$, so $A'_{fixed}=3+1-2=2$.
+\item Adaptive events: releases $=2$, starts $=1$, so $A'_{adaptive}=3+2-1=4$.
+\item Both arms conserve seven EVSE.
+\item The immediate availability difference is $4-2=2$ EVSE.
+\item The accepted-start difference creates one candidate: $2-1=1$.
+\item The prior pool has 100 MCU; reserve target is 10; offerable amount is 90.
+\item The candidate receives two funded offers: 20 MCU at 1.0 km and 10 MCU at 0.5 km.
+\item Assumed credit/distance utility produces two receiver probabilities plus outside probability.
+\item A stochastic draw selects the first receiver.
+\item Safety rechecks the pool, offer expiry, distance and residual capacity.
+\item Atomic reservation moves 20 MCU from available to reserved and reserves one capacity unit.
+\item Simulated receiver start moves 20 MCU from reserved to outstanding.
+\item Candidate conservation is $1=1+0$; ledger reconciliation remains zero.
+\item The run succeeds only if all four domain gates pass.
+\item The scenario becomes robust only after enough replications and $L_W\ge0.80$.
+\end{enumerate}
+
+The discipline is simple: no EVSE, candidate, MCU or capacity unit may disappear between blocks without an explicit event and outcome.
+
+\section{Repository map}
+
+\begin{longtable}{p{5.4cm}p{10.6cm}}
+\toprule Path & Responsibility \\\midrule\endhead
+\code{src/collect.py} & collection loop, one-shot and dashboard modes. \\
+\code{src/ocpi.py}, \code{datex.py} & source clients and parsing. \\
+\code{src/database\_v2.py}, \code{schema\_v2.sql} & SQLite schema, relationships, writes and reads. \\
+\code{src/historical.py}, \code{flow.py} & state intervals and time series. \\
+\code{src/scarcity.py}, \code{derivative\_statistics.py} & evidence-based metrics. \\
+\code{src/baseline\_readiness.py} & readiness gates and ineligibility reasons. \\
+\code{src/transition\_model.py}, \code{trajectory.py} & hazards and baseline generators. \\
+\code{src/fixed\_policy.py} & F1 observed tariff replay. \\
+\code{src/adaptive\_policy.py} & OSA-v1 mechanism. \\
+\code{src/policy\_integration.py} & F1, adjustment, rollout and intensity. \\
+\code{src/simulation\_contract.py} & types, provenance and invariants. \\
+\code{src/release\_response.py}, \code{arrival\_response.py} & behavioural assumptions. \\
+\code{src/simulation\_grid.py} & paired upstream Monte Carlo. \\
+\code{src/simulation\_evaluation.py}, \code{robustness.py} & shared metrics and upstream robustness. \\
+\code{src/receiver\_choice.py}, \code{simulation\_ledger.py} & choice and append-only MCU lifecycle. \\
+\code{src/fairness\_safety.py} & pre-reservation gates and distributional proxies. \\
+\code{src/credit\_simulation\_grid.py} & downstream credit/choice/ledger scenarios. \\
+\texttt{src/credit\_simulation\_}\allowbreak\texttt{evaluation.py} & four-domain evaluation. \\
+\code{src/credit\_robustness.py} & joint gates and Wilson criterion. \\
+\code{src/spatial\_redistribution.py} & capacity-constrained network stress test. \\
+\code{src/dashboard.py} & raw evidence and provenance explorer. \\
+\code{src/policy\_dashboard.py}, \code{policy\_lab.py} & jury-facing Policy Lab. \\
+\code{docs/} & versioned contracts and claim boundaries. \\
+\code{tests/} & 156 automated contract and regression tests. \\
+\bottomrule
+\end{longtable}
+
+Commands:
+\begin{verbatim}
+python src/collect.py --once
+python src/collect.py
+python -m streamlit run src/dashboard.py
+python -m streamlit run src/policy_dashboard.py
+python -m unittest discover -s tests -v
+\end{verbatim}
+
+\section{What exists and what is not yet proven}
+
+\textbf{Implemented:} normalised database, timezone rules, state intervals and time series, scarcity and derivative statistics, readiness gates, F1, OSA-v1, typed response, receiver choice, MCU ledger, safety guards, paired upstream/downstream grids, four-domain evaluation, joint observable robustness and the six-tab Policy Lab.
+
+\textbf{Not proven or operationally complete:} driver elasticity; observed queue, waiting or post-charge idle; causal effect; Session/CDR totals; road travel time; validated welfare or demographic fairness; operator settlement; production deployment. Receiver eligibility and global offer allocation remain explicit design contracts and inputs. These limitations define the MVP boundary and the pilot programme.
+
+\section{Outputs worth showing}
+
+\begin{longtable}{p{4.0cm}p{7.3cm}p{4.4cm}}
+\toprule Output & What is shown & Allowed meaning \\\midrule\endhead
+Live evidence & map, sources, timestamps, status counts, tariff components & real current observations \\
+Readiness & history span, coverage, blocker reasons & why output is allowed or withheld \\
+OSA-v1 & pressure, persistence, bounded adjustment & policy mechanism, not a bill \\
+Response curves & release/start probability and receiver choice & sensitivity assumption \\
+Illustrative preview & assumed response strength $\times$ policy intensity & mechanism only, not evidence \\
+MCU flow & pool, offer, reservation, issuance, redemption & reconciled simulated accounting \\
+Four domains & system, redistribution, user-proxy, accounting & separate evaluation outputs \\
+Joint robustness & Wilson rule, missingness and thresholds & scenario-conditional decision \\
+Decision & pilot evidence and partner ask & next measurable step \\
+\bottomrule
+\end{longtable}
+
+The main demonstration path is one real Vilnius site/source/timestamp $\to$ qualified or withheld scarcity state $\to$ bounded OSA signal $\to$ funded-alternative scenario $\to$ assumed response $\to$ decision boundary.
+
+If the data gate is closed, formal effectiveness remains locked. A coloured preview may be shown only with a persistent label such as \emph{Illustrative scenario --- current history is not yet data-qualified}. Its colour represents a calculated response-probability change under declared assumptions, not proven effectiveness.
+
+\section{How to run the demo}
+
+\begin{enumerate}
+\item \textbf{Evidence.} Show the map, real statuses, tariff structure and readiness gate. Explain that a large row count does not replace calendar duration.
+\item \textbf{Policy.} Show origin signal $\to$ MCU pool $\to$ funded receiver offer. Separate offer from issuance.
+\item \textbf{Response.} Show price, credit, distance and delay sensitivities explicitly as assumptions.
+\item \textbf{Evaluation.} Show the four domain cards and not-evaluable boundaries.
+\item \textbf{Robustness.} Show the illustrative preview and distinguish it from a future data-qualified Wilson result in one sentence.
+\item \textbf{Decision.} End with the bounded pilot and state that DAEI is a future pathway, not the current MCU.
+\end{enumerate}
+
+Do not spend the demo scrolling through source code. Code supports reproducibility questions; the interface tells the solution story.
+
+\section{Three-minute pitch structure}
+
+\textbf{0:00--0:25.} ``Vilnius can see charger status, but it cannot see a physical queue or know how drivers will respond to a new policy. Promising an effect would therefore be premature.''
+
+\textbf{0:25--1:00.} ``We turned OCPI and DATEX into one evidence pipeline: availability, state intervals and scarcity, with the real OCPI tariff as baseline.''
+
+\textbf{1:00--1:30.} ``OSA-v1 creates a bounded scarcity signal, while prior-funded MCU support qualified alternatives. Offer, issuance and redemption remain separate; MCU is not DAEI.''
+
+\textbf{1:30--2:20.} ``Because behavioural response is unknown, we vary price, credit, distance and delay assumptions. Fixed and adaptive arms share the same path and random numbers; choices pass safety and a reconciled ledger.''
+
+\textbf{2:20--2:45.} ``The result is a four-domain map. Joint success requires system, redistribution, user-proxy and accounting gates at the same time.''
+
+\textbf{2:45--3:00.} ``Our ask is to continue collection, choose qualified pilot sites and replace assumptions with measured Vilnius effects.''
+
+\boxtext{\textbf{Core sentence.} We do not claim that the policy is already proven. We identify the joint price-and-credit response conditions under which it is robust within observable limits, expose spatial, access-proxy and accounting trade-offs, and turn them into a measurable city pilot.}
+
+\section{Jury questions}
+
+\textbf{Why not pricing alone?} The scarcity signal remains a controllable trigger, while contributions support bounded alternatives through MCU circulation. This is not a replacement for infrastructure and not a production payment system.
+
+\textbf{Is this DAEI?} No. DAEI is a regulated renewable-transport accounting system and a possible future integration precedent. MCU is a separate simulated charging-balancing unit with no conversion rate to DAEI.
+
+\textbf{How do you know how people react?} We do not yet know. That is why sensitivities are marked assumed, explored systematically and converted into falsifiable pilot thresholds.
+
+\textbf{Where is the queue?} It is not observed and we do not claim it. Qualified zero availability is precisely defined capacity-scarcity evidence.
+
+\textbf{Why show a preview before seven days?} The formal effectiveness heatmap remains locked. The visible preview demonstrates the shape of an assumed response mechanism, remains permanently labelled illustrative and does not enter the robustness decision.
+
+\textbf{Are you merely suppressing demand?} We report displaced/deferred accepted-start proxies, outside outcomes and receiver scarcity separately. Improvement in one scarcity metric is insufficient.
+
+\textbf{Why both OCPI and DATEX?} OCPI describes EVSE, status and tariff; DATEX adds infrastructure context. They are not merged without an audited mapping.
+
+\textbf{What is innovative?} Not a magical formula, but decision support under sparse behavioural data: real tariffs, a digital twin, explicit uncertainty, conserved resources and a falsifiable pilot threshold.
+
+\textbf{What should the city do next?} Continue collection, select sites after readiness audit, add Session/CDR evidence, run a bounded A/B or staggered rollout and evaluate pre-registered outcomes.
+
+\textbf{Who pays?} The working hypothesis is a city--operator pilot partnership. Prior-funded contributions and explicitly disclosed subsidy may fund an MCU scenario; real liability and settlement require agreement before value is issued.
+
+\textbf{What is the one KPI?} Qualified zero-availability snapshot share should fall without worsening receiver scarcity, while accounting remains solvent and reconciled.
+
+\section{Team preparation and one-page memory aid}
+
+\textbf{Session 1 (60 min):} draw the pipeline from memory and explain provenance and claim scopes.\\
+\textbf{Session 2 (60 min):} one person explains F1/OSA, the other transition/response/robustness; then switch.\\
+\textbf{Session 3 (45 min):} run the demo without a script; capture backup screenshots and an offline story.\\
+\textbf{Session 4 (45 min):} run two timed pitches and fifteen hostile questions.\\
+\textbf{Before the stage:} verify database copy, UI, resolution, seed and readiness timestamp; do not promise live network access; keep the PDF and three key screenshots.
+
+\begin{itemize}
+\item Product: policy stress-testing digital twin for Vilnius EV charging.
+\item Evidence: OCPI + DATEX; EVSE is the capacity unit; UTC storage/Vilnius calendar.
+\item Scarcity: observable operational capacity, never an invented queue.
+\item Baseline: F1 structured observed tariff replay.
+\item Policy: OSA-v1 scarcity signal + prior-funded MCU circulation.
+\item Separation: intensity $\lambda$, coverage $\kappa$, rollout $R_i^{rollout}(t)$.
+\item Unknown behaviour: explicit price, credit, distance and delay assumptions.
+\item Fair comparison: same path, same random numbers, same metrics.
+\item Conservation: candidates, MCU and receiver capacity cannot disappear.
+\item Decision: Wilson lower bound $\ge0.80$, at least 20 valid replications.
+\item Limitation: 4.08 days at the guide snapshot; preview is illustrative only.
+\item Ask: collect $\to$ qualify sites $\to$ bounded pilot $\to$ validate response.
+\end{itemize}
+
+\section{Final understanding check}
+
+The team is ready when every member can answer:
+\begin{enumerate}
+\item Why is zero availability not an observed queue?
+\item How does F1 differ from OSA-v1?
+\item Why are behavioural sensitivities assumptions?
+\item Why are $A'$ and $C'$ projections rather than observations?
+\item Why do fixed and adaptive share random numbers?
+\item Why must an accepted-start difference create a candidate?
+\item Why is offer not reservation, issuance or redemption?
+\item Why does receiver choice need an outside option?
+\item Why can a good system metric not compensate for failed accounting or spatial safety?
+\item Why may 19 successes out of 20 still fail the Wilson threshold?
+\item What does an illustrative preview demonstrate, and what does it not prove?
+\end{enumerate}
+
+\vfill
+\small\textit{This guide describes the repository and local database snapshot as of 10--11 October 2026. Readiness figures must be recomputed before recording or presenting because collection continues. Versioned Markdown contracts in \code{docs/} remain normative.}
+
+\end{document}

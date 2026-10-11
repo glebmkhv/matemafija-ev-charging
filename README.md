@@ -149,6 +149,7 @@ not invent queues, idle time, congestion scores or causal effects.
 
 ## Documentation
 
+- [Full project and presentation guide (English)](output/pdf/matemafija_project_guide_en.pdf)
 - [Full project and presentation guide (Russian)](output/pdf/matemafija_project_guide.pdf)
 - [Final five-minute speech and production notes (English)](output/pdf/matemafija_five_minute_speech.pdf)
 - [Documentation map](docs/README.md)
@@ -158,13 +159,13 @@ not invent queues, idle time, congestion scores or causal effects.
 - [Data and modelling assumptions](docs/assumptions.md)
 - [Final acceptance audit](docs/final_acceptance_audit.md)
 
-The guide is the concise, jury-facing description of the same architecture.
+The English guide is the primary jury-facing description of the same architecture.
 The Markdown documents are the normative technical specifications.
 
-The public entry point, technical contracts and pitch are in English for an
-international Hack4Vilnius audience. The integrated guide and its supplementary
-model explainer are in Russian and are explicitly labelled in the documentation
-map; they remain public reference material rather than private team notes.
+The public entry point, technical contracts, primary guide and pitch are in
+English for an international Hack4Vilnius audience. The Russian guide and its
+supplementary model explainer remain public reference material and are explicitly
+labelled in the documentation map; they are not private team notes.
 
 ## Repository map
 
