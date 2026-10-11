@@ -149,6 +149,8 @@ not invent queues, idle time, congestion scores or causal effects.
 
 ## Documentation
 
+- [Final pitch presentation (English)](output/pdf/vilnius_ev_twin_final_presentation.pdf)
+- [Pre-pitch video](https://youtu.be/pkcGCyx5Tlo)
 - [Full project and presentation guide (English)](output/pdf/matemafija_project_guide_en.pdf)
 - [Full project and presentation guide (Russian)](output/pdf/matemafija_project_guide.pdf)
 - [Final five-minute speech and production notes (English)](output/pdf/matemafija_five_minute_speech.pdf)
@@ -175,7 +177,7 @@ docs/       formal contracts, assumptions, guide and final speech sources
 tests/      automated unit and contract tests
 data/       local database location; large collected data are not committed
 notebooks/  exploratory analysis
-output/pdf/ generated public guide and five-minute speech
+output/pdf/ generated public guides, five-minute speech and final presentation
 ```
 
 ## Verification

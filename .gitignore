@@ -237,6 +237,7 @@ output/*
 output/pdf/*
 !output/pdf/matemafija_project_guide.pdf
 !output/pdf/matemafija_five_minute_speech.pdf
+!output/pdf/vilnius_ev_twin_final_presentation.pdf
 
 # Ignoring PyCharm
 .idea/

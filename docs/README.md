@@ -81,6 +81,8 @@ public explanatory material and do not override the versioned contracts.
 
 ## Communication
 
+- [Final pitch presentation](../output/pdf/vilnius_ev_twin_final_presentation.pdf)
+- [Pre-pitch video](https://youtu.be/pkcGCyx5Tlo)
 - [Policy Lab flow](policy_lab.md) — six-step jury interface, readiness locks,
   explanatory response controls and joint decision narrative.
 - [Final acceptance audit](final_acceptance_audit.md) — repository-wide
